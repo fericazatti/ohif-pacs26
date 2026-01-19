@@ -224,11 +224,11 @@ export const LayoutAdvancedAxialPrimary = (props: IconProps) => (
   </svg>
 );
 
-export const LayoutAdvancedMPR = (props: IconProps) => (
+export const LayoutAdvancedMPR = (props) => (
   <svg
     width="29px"
-    height="18px"
-    viewBox="0 0 29 18"
+    height="28px"  /* 1. AUMENTAMOS LA ALTURA DEL SVG */
+    viewBox="0 0 29 28" /* 2. AJUSTAMOS EL CAMPO DE VISIÓN */
     version="1.1"
     xmlns="http://www.w3.org/2000/svg"
     {...props}
@@ -244,28 +244,35 @@ export const LayoutAdvancedMPR = (props: IconProps) => (
         id="layout-advanced-mpr"
         transform="translate(1, 1)"
         stroke="currentColor"
+        strokeWidth="1"
       >
-        <path
-          d="M17.7428571,0 L25,0 C26.1045695,-2.02906125e-16 27,0.8954305 27,2 L27,14.2 C27,15.3045695 26.1045695,16.2 25,16.2 L17.7428571,16.2 L17.7428571,16.2 L17.7428571,0 Z"
-          id="Rectangle"
-        ></path>
+        {/* 3. RECTÁNGULO MÁS ALTO (27 ancho x 26 alto) */}
         <rect
-          id="Rectangle"
-          x="9"
+          x="0"
           y="0"
-          width="9"
-          height="16.2"
+          width="27"
+          height="26" 
+          rx="3"
         ></rect>
-        <path
-          d="M0,0 L7.25714286,0 C8.36171236,-1.18396092e-15 9.25714286,0.8954305 9.25714286,2 L9.25714286,14.2 C9.25714286,15.3045695 8.36171236,16.2 7.25714286,16.2 L0,16.2 L0,16.2 L0,0 Z"
-          id="Rectangle"
-          transform="translate(4.6286, 8.1) scale(-1, 1) translate(-4.6286, -8.1)"
-        ></path>
       </g>
+
+      {/* 4. TEXTO RE-CENTRADO VERTICALMENTE */}
+      <text
+        x="14.5"
+        y="17" 
+        fill="currentColor"
+        textAnchor="middle"
+        fontFamily="sans-serif"
+        fontSize="9" 
+        fontWeight="800"
+        stroke="none"
+        letterSpacing="0.5"
+      >
+        MPR
+      </text>
     </g>
   </svg>
 );
-
 export const LayoutCommon1x1 = (props: IconProps) => (
   <svg
     width="28px"

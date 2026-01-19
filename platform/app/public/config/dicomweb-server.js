@@ -19,7 +19,6 @@ window.config = {
   showWarningMessageForCrossOrigin: false,
   showCPUFallbackMessage: true,
   showLoadingIndicator: true,
-  strictZSpacingForVolumeViewport: true,
   defaultDataSourceName: 'dicomweb',
 
   // --- PERSONALIZACIÓN (LOGO) ---

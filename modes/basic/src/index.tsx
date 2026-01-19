@@ -210,15 +210,17 @@ export function onModeExit({ servicesManager }: withAppTypes) {
 
 export const toolbarSections = {
   [TOOLBAR_SECTIONS.primary]: [
-    'MeasurementTools',
+    'Layout',
+    'MPR',
+    'StackScroll',
+    'WindowLevel',
     'Zoom',
+    'rotate-right',
     'Pan',
     'TrackballRotate',
-    'WindowLevel',
     'Capture',
-    'Layout',
-    'Crosshairs',
     'MoreTools',
+    'MeasurementTools',
   ],
 
   [TOOLBAR_SECTIONS.viewportActionMenu.topLeft]: ['orientationMenu', 'dataOverlayMenu'],
@@ -260,7 +262,6 @@ export const toolbarSections = {
     'ImageSliceSync',
     'ReferenceLines',
     'ImageOverlayViewer',
-    'StackScroll',
     'invert',
     'Probe',
     'Cine',
