@@ -57,12 +57,12 @@ module.exports = {
           foreground: '#F8F8F8',
         },
         secondary: {
-          DEFAULT: '#0f0e24ff',
+          DEFAULT: '#241d0eff',
           foreground: '#D0D0D0',
         },
         customblue: {
           10: '#0A0A0A',
-          20: '#141414',
+          20: '#464646',
           30: '#1E1E1E',
           40: '#D45116',
           50: '#D45116',
@@ -114,8 +114,8 @@ module.exports = {
       },
       bkg: {
         low: '#050615',
-        med: '#090C29',
-        full: '#041C4A',
+        med: '#202022',
+        full: '#2a2a2b',
       },
       info: {
         primary: '#FFFFFF',

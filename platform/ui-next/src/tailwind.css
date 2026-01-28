@@ -4,11 +4,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* OHIF Theme -- #1C7BFF*/
+/* OHIF Theme -- #1C7BFF - 215 100% 55%;*/
 
 @layer base {
   :root {
-    --highlight: 215 100% 55%;
+    --highlight: 140 60% 50%;
     --neutral: 0 0% 48%;
     --neutral-light: 0 0% 70%;
     --neutral-dark: 0 0% 17%;
@@ -18,7 +18,7 @@
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 10%;
     --popover-foreground: 0 0% 98%;
-    --primary: 19 81% 46%;
+    --primary: 240 81% 46%;
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 12%;  
     --secondary-foreground: 0 0% 82%;

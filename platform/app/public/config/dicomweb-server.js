@@ -4,6 +4,8 @@ window.config = {
   extensions: [],
   modes: [],
   showStudyList: true,
+  showPatientInfo: 'visibleReadOnly', // siempre visible y expandido
+
 
   // --- OPTIMIZACIÓN RENDIMIENTO GLOBAL ---
   useNorm16Texture: true,
@@ -20,6 +22,11 @@ window.config = {
   showCPUFallbackMessage: true,
   showLoadingIndicator: true,
   defaultDataSourceName: 'dicomweb',
+
+  // ---- No mostrar cartel de solo uso para investigación
+  investigationalUseDialog: {
+    option: 'never',
+  },
 
   // --- PERSONALIZACIÓN (LOGO) ---
   whiteLabeling: {
@@ -89,7 +96,7 @@ window.config = {
         
         // Configuraciones críticas para compatibilidad con DCM4CHEE
         omitQuotationForMultipartRequest: true,
-        singlepart: 'video', 
+        singlepart: false, 
         bulkDataURI: {
             enabled: true,
         },

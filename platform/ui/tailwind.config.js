@@ -30,22 +30,22 @@ module.exports = {
 
       primary: {
         light: '#D0D0D0',
-        main: '#060924',
-        dark: '#060924',
+        main: '#1f1f20',
+        dark: '#000000',
         active: '#D45116',
       },
       inputfield: {
         main: '#532222ff',
         disabled: '#c9c2dfff',
         focus: '#5acce6',
-        placeholder: '#39383f',
+        placeholder: '#39383f', 
       },
 
       secondary: {
         light: '#2A2A2A',
         main: '#1F1F1F',
-        dark: '#070C14',
-        active: '#262626',
+        dark: '#131414',
+        active: '#161718',
       },
 
       indigo: {
@@ -60,9 +60,9 @@ module.exports = {
         active: '#2c3074',
       },
       bkg: {
-        low: '#050615',
-        med: '#1d1c1cff',
-        full: '#041C4A',
+        low: '#000000',
+        med: 'rgb(27, 27, 27)',
+        full: '#3d3d3d',
       },
       info: {
         primary: '#FFFFFF',

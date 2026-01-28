@@ -220,6 +220,7 @@ export const toolbarSections = {
     'TrackballRotate',
     'Capture',
     'MoreTools',
+    'Crosshairs',
     'MeasurementTools',
   ],
 
