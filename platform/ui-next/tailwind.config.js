@@ -53,12 +53,24 @@ module.exports = {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
+          DEFAULT: '#999999ff', //define varios de los colores de la ui, como nombre del paciente, etc
+          foreground: '#F8F8F8',
         },
         secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
+          DEFAULT: '#241d0eff',
+          foreground: '#D0D0D0',
+        },
+        customblue: {
+          10: '#0A0A0A',
+          20: '#464646',
+          30: '#1E1E1E',
+          40: '#D45116',
+          50: '#D45116',
+          80: '#D45116',
+          100: '#D45116',
+          200: '#D45116',
+          300: '#2A2A2A',
+          400: '#3A3A3A',
         },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
@@ -102,8 +114,8 @@ module.exports = {
       },
       bkg: {
         low: '#050615',
-        med: '#090C29',
-        full: '#041C4A',
+        med: '#202022',
+        full: '#2a2a2b',
       },
       info: {
         primary: '#FFFFFF',
@@ -111,7 +123,7 @@ module.exports = {
       },
       actions: {
         primary: '#348CFD',
-        highlight: '#5ACCE6',
+        highlight: '#1FB250',
         hover: 'rgba(52, 140, 253, 0.2)',
       },
     },

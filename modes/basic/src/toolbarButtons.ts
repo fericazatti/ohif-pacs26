@@ -677,6 +677,23 @@ const toolbarButtons: Button[] = [
       ],
     },
   },
+  {
+    id: 'MPR',
+    uiType: 'ohif.toolButton',
+    props: {
+      icon: 'LayoutAdvancedMPR', // Usamos un icono de layout genérico
+      label: 'MPR',
+      tooltip: 'Multi-Planar Reconstruction',
+      commands: {
+        commandName: 'setHangingProtocol',
+        commandOptions: {
+          protocolId: 'mpr', // Este ID activa la vista MPR estándar
+        },
+      },
+      evaluate: 'evaluate.action',
+    },
+  },
+];
   // {
   //   id: 'Undo',
   //   uiType: 'ohif.toolButton',
@@ -703,6 +720,5 @@ const toolbarButtons: Button[] = [
   //     evaluate: 'evaluate.action',
   //   },
   // },
-];
 
 export default toolbarButtons;

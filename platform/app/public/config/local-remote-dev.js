@@ -44,17 +44,17 @@ window.config = {
   },
   
   // --- AUTENTICACIÓN (DEV) ---
-  oidc: [
-    {
-      authority: 'https://dicomsecurity.intranet.intecnus.org.ar/realms/dcm4che', 
-      client_id: 'ohif-viewer',
-      redirect_uri: 'http://10.73.173.10:3000/callback',
-      response_type: 'code',
-      scope: 'openid',
-      post_logout_redirect_uri: 'http://10.73.173.10:3000/',  
-      revoke_access_token_on_logout: true,
-    },
-  ],
+  // oidc: [
+  //   {
+  //     authority: 'https://10.73.173.10:4443/realms/dcm4che', 
+  //     client_id: 'ohif-viewer',
+  //     redirect_uri: 'http://10.73.173.10:3000/callback',
+  //     response_type: 'code',
+  //     scope: 'openid',
+  //     post_logout_redirect_uri: 'http://10.73.173.10:3000/',
+  //     revoke_access_token_on_logout: true,
+  //   },
+  //],
 
   // --- FUENTES DE DATOS (DEV) ---
   dataSources: [
@@ -65,9 +65,9 @@ window.config = {
         friendlyName: 'DCM4CHEE Speed Config',
         name: 'DCM4CHEE',
         
-        wadoUriRoot: 'https://dicomviewer.intranet.intecnus.org.ar/dcm4chee-arc/aets/DCM4CHEE/wado',
-        qidoRoot: 'https://dicomviewer.intranet.intecnus.org.ar/dcm4chee-arc/aets/DCM4CHEE/rs',
-        wadoRoot: 'https://dicomviewer.intranet.intecnus.org.ar/dcm4chee-arc/aets/DCM4CHEE/rs',
+        wadoUriRoot: 'https://orthanc-hetzner.duckdns.org/pacs/dicom-web',
+        qidoRoot: 'https://orthanc-hetzner.duckdns.org/pacs/dicom-web',
+        wadoRoot: 'https://orthanc-hetzner.duckdns.org/pacs/dicom-web',
         
         // --- ⚡ OPTIMIZACIÓN DE CARGA DE METADATOS ---
         // Reduce el tamaño de las respuestas JSON iniciales

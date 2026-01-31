@@ -8,7 +8,10 @@ import {
 } from '../DropdownMenu/DropdownMenu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../Tooltip';
 
-export function StudyBrowserSort({ servicesManager }: withAppTypes) {
+export function StudyBrowserSort({
+  servicesManager,
+  compact = false,
+}: withAppTypes & { compact?: boolean }) {
   // Todo: this should not be here, no servicesManager should be in ui-next, only
   // customization service
   const { customizationService, displaySetService } = servicesManager.services;
@@ -50,12 +53,19 @@ export function StudyBrowserSort({ servicesManager }: withAppTypes) {
     };
   }, [displaySetService, selectedSort, sortDirection]);
 
+  const containerClassName = compact
+    ? 'flex min-w-[140px] max-w-[200px] items-center gap-1'
+    : 'flex w-[50%] items-center gap-1';
+  const triggerClassName = compact
+    ? 'border-inputfield-main focus:border-inputfield-main flex h-[26px] w-full min-w-0 items-center justify-start overflow-hidden whitespace-nowrap rounded border bg-black p-2 text-base text-white truncate'
+    : 'border-inputfield-main focus:border-inputfield-main flex h-[26px] w-full items-center justify-start overflow-hidden whitespace-nowrap rounded border bg-black p-2 text-base text-white';
+
   return (
-    <div className="flex w-[50%] items-center gap-1">
+    <div className={containerClassName}>
       <DropdownMenu>
         <Tooltip>
           <TooltipTrigger className="w-full overflow-hidden">
-            <DropdownMenuTrigger className="border-inputfield-main focus:border-inputfield-main flex h-[26px] w-full items-center justify-start overflow-hidden whitespace-nowrap rounded border bg-black p-2 text-base text-white">
+            <DropdownMenuTrigger className={triggerClassName}>
               {selectedSort.label}
             </DropdownMenuTrigger>
           </TooltipTrigger>

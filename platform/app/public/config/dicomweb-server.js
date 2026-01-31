@@ -6,6 +6,8 @@ window.config = {
   extensions: [],
   modes: [],
   showStudyList: true,
+  showPatientInfo: 'visibleReadOnly', // siempre visible y expandido
+
 
   // --- OPTIMIZACIÓN RENDIMIENTO GLOBAL ---
   useNorm16Texture: true,
@@ -21,8 +23,12 @@ window.config = {
   showWarningMessageForCrossOrigin: false,
   showCPUFallbackMessage: true,
   showLoadingIndicator: true,
-  strictZSpacingForVolumeViewport: true,
   defaultDataSourceName: 'dicomweb',
+
+  // ---- No mostrar cartel de solo uso para investigación
+  investigationalUseDialog: {
+    option: 'never',
+  },
 
   // --- PERSONALIZACIÓN (LOGO) ---
   whiteLabeling: {
@@ -102,7 +108,7 @@ oidc: [
         supportsWildcard: true,
         
         omitQuotationForMultipartRequest: true,
-        singlepart: 'video', 
+        singlepart: false, 
         bulkDataURI: {
             enabled: true,
         },

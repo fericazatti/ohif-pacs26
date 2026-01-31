@@ -7,18 +7,29 @@ import {
 } from '../DropdownMenu/DropdownMenu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../Tooltip';
 
-export function StudyBrowserViewOptions({ tabs, onSelectTab, activeTabName }: withAppTypes) {
+export function StudyBrowserViewOptions({
+  tabs,
+  onSelectTab,
+  activeTabName,
+  compact = false,
+}: withAppTypes & { compact?: boolean }) {
   const handleTabChange = (tabName: string) => {
     onSelectTab(tabName);
   };
 
   const activeTab = tabs.find(tab => tab.name === activeTabName);
+  const triggerWrapperClass = compact
+    ? 'min-w-[120px] max-w-[160px] overflow-hidden'
+    : 'w-full w-[50%] overflow-hidden';
+  const triggerClassName = compact
+    ? 'border-inputfield-main focus:border-inputfield-main flex h-[26px] w-full min-w-0 items-center justify-start rounded border bg-black p-2 text-base text-white truncate'
+    : 'border-inputfield-main focus:border-inputfield-main flex h-[26px] w-full items-center justify-start rounded border bg-black p-2 text-base text-white';
 
   return (
     <DropdownMenu>
       <Tooltip>
-        <TooltipTrigger className="w-full w-[50%] overflow-hidden">
-          <DropdownMenuTrigger className="border-inputfield-main focus:border-inputfield-main flex h-[26px] w-full items-center justify-start rounded border bg-black p-2 text-base text-white">
+        <TooltipTrigger className={triggerWrapperClass}>
+          <DropdownMenuTrigger className={triggerClassName}>
             {activeTab?.label}
           </DropdownMenuTrigger>
         </TooltipTrigger>
