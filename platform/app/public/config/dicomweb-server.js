@@ -1,6 +1,8 @@
 /** @type {AppTypes.Config} */
 window.config = {
-  routerBasename: '/',
+  // === CAMBIO CRÍTICO 1: Decirle a OHIF que vive en /viewer ===
+  routerBasename: '/viewer',
+  
   extensions: [],
   modes: [],
   showStudyList: true,
@@ -31,7 +33,8 @@ window.config = {
           target: '_self',
           rel: 'noopener noreferrer',
           className: 'header-brand',
-          href: '/',
+          // Al hacer clic en el logo, volvemos a HEROS (la raíz)
+          href: '/', 
           style: { 
             display: 'flex', 
             alignItems: 'center',
@@ -40,8 +43,8 @@ window.config = {
           }
         },
         React.createElement('img', {
-          // Asegúrate que este archivo esté en platform/app/public/
-          src: '/logo-institucion-gray.png', 
+          // === CAMBIO RECOMENDADO: Ruta absoluta incluyendo /viewer/ para que cargue la imagen ===
+          src: '/viewer/logo-institucion-gray.png', 
           style: { 
             maxWidth: '180px',
             height: '45px',
@@ -52,22 +55,31 @@ window.config = {
     }
   },
   
-  // --- AUTENTICACIÓN (KEYCLOAK) ---
-  // Ruta relativa '/realms/' -> Nginx Proxy -> Keycloak:8843
-  oidc: [
+oidc: [
     {
-      authority: '/realms/dcm4che', 
-      client_id: 'ohif-viewer',
-      redirect_uri: '/callback',
-      response_type: 'code',
-      scope: 'openid',
-      post_logout_redirect_uri: '/',
-      revoke_access_token_on_logout: true,
+        // 1. Authority: ABSOLUTA (Obligatorio porque Keycloak está en otro subdominio)
+        authority: 'https://dicomsecurity.intranet.intecnus.org.ar/realms/dcm4che',
+        
+        client_id: 'ohif-viewer', // Asegurate que en Keycloak se llame EXACTAMENTE así
+        
+        // 2. Redirect URI: Relativa a la raíz del dominio
+        // Esta es la ruta que OHIF espera internamente.
+        redirect_uri: '/viewer/callback', 
+        
+        response_type: 'code',
+        scope: 'openid email profile', // Agrega 'email profile' para ver tu nombre en el visor
+        
+        // 3. Logout: Debería devolverte al inicio del visor, no a la nada
+        post_logout_redirect_uri: '/viewer/', 
+        
+        revoke_access_token_on_logout: true,
     },
-  ],
-
+],
+  investigationalUseDialog: {
+    option: 'never',
+  },
+  showPatientInfo: 'visible',
   // --- FUENTES DE DATOS (DCM4CHEE) ---
-  // Ruta relativa '/dcm4chee-arc/' -> Nginx Proxy -> PACS:8443
   dataSources: [
     {
       namespace: '@ohif/extension-default.dataSourcesModule.dicomweb',
@@ -76,6 +88,7 @@ window.config = {
         friendlyName: 'DCM4CHEE Proxy',
         name: 'DCM4CHEE',
         
+        // Estas rutas siguen igual porque son absolutas relativas al dominio
         wadoUriRoot: '/dcm4chee-arc/aets/DCM4CHEE/wado',
         qidoRoot: '/dcm4chee-arc/aets/DCM4CHEE/rs',
         wadoRoot: '/dcm4chee-arc/aets/DCM4CHEE/rs',
@@ -88,7 +101,6 @@ window.config = {
         supportsFuzzyMatching: true,
         supportsWildcard: true,
         
-        // Configuraciones críticas para compatibilidad con DCM4CHEE
         omitQuotationForMultipartRequest: true,
         singlepart: 'video', 
         bulkDataURI: {
