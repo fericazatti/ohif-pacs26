@@ -32,7 +32,7 @@ module.exports = {
         light: '#D0D0D0',
         main: '#1f1f20',
         dark: '#000000',
-        active: '#D45116',
+        active: '#1FB250',
       },
       inputfield: {
         main: '#532222ff',
@@ -44,7 +44,7 @@ module.exports = {
       secondary: {
         light: '#2A2A2A',
         main: '#1F1F1F',
-        dark: '#131414',
+        dark: '#252525',
         active: '#161718',
       },
 
@@ -56,7 +56,7 @@ module.exports = {
         bright: '#e1e1e1',
         light: '#a19fad',
         main: '#fff',
-        dark: '#726f7e',
+        dark: '#a8a8a8ff',
         active: '#2c3074',
       },
       bkg: {
@@ -70,7 +70,7 @@ module.exports = {
       },
       actions: {
         primary: '#348CFD',
-        highlight: '#5ACCE6',
+        highlight: '#1FB250',
         hover: 'rgba(74, 82, 92, 0.2)',
       },
       customgreen: {

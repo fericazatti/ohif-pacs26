@@ -123,7 +123,7 @@ module.exports = {
       },
       actions: {
         primary: '#348CFD',
-        highlight: '#5ACCE6',
+        highlight: '#1FB250',
         hover: 'rgba(52, 140, 253, 0.2)',
       },
     },
