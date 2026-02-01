@@ -62,21 +62,27 @@ const Thumbnail = ({
     return (
       <div
         className={classnames(
-          'flex h-full w-full flex-col items-center justify-center gap-[2px] p-[4px]',
+          'flex h-full w-full flex-col items-center justify-start gap-[2px] p-[4px]', // Cambié justify-center a justify-start
           isActive && 'bg-popover rounded'
         )}
       >
-        <div className="h-[114px] w-[128px]">
-          <div className="relative bg-black">
+        {/* CAMBIO: Contenedor de imagen CUADRADO usando style para asegurar compatibilidad */}
+        <div 
+          className="w-full relative" 
+          style={{ aspectRatio: '1/1' }} 
+        >
+          <div className="relative bg-black h-full w-full">
             {imageSrc ? (
               <img
                 src={imageSrc}
                 alt={imageAltText}
-                className="h-[114px] w-[128px] rounded object-contain"
+                // CAMBIO: h-full para llenar el cuadrado
+                className="h-full w-full rounded object-contain"
                 crossOrigin="anonymous"
               />
             ) : (
-              <div className="bg-background h-[114px] w-[128px] rounded"></div>
+              // CAMBIO: h-full para llenar el cuadrado
+              <div className="bg-background h-full w-full rounded"></div>
             )}
 
             {/* bottom left */}
@@ -140,12 +146,14 @@ const Thumbnail = ({
             </div>
           </div>
         </div>
-        <div className="flex h-[52px] w-[128px] flex-col justify-start pt-px">
+        
+        {/* Contenedor de texto (Description) */}
+        <div className="flex h-[52px] w-full flex-col justify-start pt-px">
           <Tooltip>
             <TooltipContent>{description}</TooltipContent>
-            <TooltipTrigger>
+            <TooltipTrigger className="w-full">
               <div
-                className="min-h-[18px] w-[128px] overflow-hidden text-ellipsis whitespace-nowrap pb-0.5 pl-1 text-left text-[12px] font-normal leading-4 text-white"
+                className="min-h-[18px] w-full overflow-hidden text-ellipsis whitespace-nowrap pb-0.5 pl-1 text-left text-[12px] font-normal leading-4 text-white"
                 data-cy="series-description-label"
               >
                 {description}
@@ -270,7 +278,8 @@ const Thumbnail = ({
       className={classnames(
         className,
         'bg-muted hover:bg-primary/30 group flex cursor-pointer select-none flex-col rounded outline-none',
-        viewPreset === 'thumbnails' && 'h-[170px] w-[135px]',
+        // CAMBIO FINAL: h-auto para permitir que crezca, en lugar de h-[170px]
+        viewPreset === 'thumbnails' && 'h-auto w-full',
         viewPreset === 'list' && 'h-[40px] w-full'
       )}
       id={`thumbnail-${displaySetInstanceUID}`}
@@ -300,15 +309,7 @@ Thumbnail.propTypes = {
   displaySetInstanceUID: PropTypes.string.isRequired,
   className: PropTypes.string,
   imageSrc: PropTypes.string,
-  /**
-   * Data the thumbnail should expose to a receiving drop target. Use a matching
-   * `dragData.type` to identify which targets can receive this draggable item.
-   * If this is not set, drag-n-drop will be disabled for this thumbnail.
-   *
-   * Ref: https://react-dnd.github.io/react-dnd/docs/api/use-drag#specification-object-members
-   */
   dragData: PropTypes.shape({
-    /** Must match the "type" a dropTarget expects */
     type: PropTypes.string.isRequired,
   }),
   imageAltText: PropTypes.string,

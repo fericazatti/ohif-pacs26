@@ -34,8 +34,8 @@ const ThumbnailList = ({
         {thumbnailItems.length > 0 && (
           <div
             id="ohif-thumbnail-list"
-            className="bg-bkg-low grid grid-cols-[repeat(auto-fit,_minmax(0,135px))] place-items-start gap-[4px]"
-          >
+            className="bg-bkg-low grid grid-cols-1 gap-[4px] w-full px-2"
+            >
             {thumbnailItems.map(item => {
               const { displaySetInstanceUID, componentType, numInstances, ...rest } = item;
 
