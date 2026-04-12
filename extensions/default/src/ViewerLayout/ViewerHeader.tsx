@@ -18,22 +18,23 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
   const location = useLocation();
 
   const onClickReturnButton = () => {
-    const { pathname } = location;
-    const dataSourceIdx = pathname.indexOf('/', 1);
+    // const { pathname } = location;
+    // const dataSourceIdx = pathname.indexOf('/', 1);
 
-    const dataSourceName = pathname.substring(dataSourceIdx + 1);
-    const existingDataSource = extensionManager.getDataSources(dataSourceName);
+    // const dataSourceName = pathname.substring(dataSourceIdx + 1);
+    // const existingDataSource = extensionManager.getDataSources(dataSourceName);
 
-    const searchQuery = new URLSearchParams();
-    if (dataSourceIdx !== -1 && existingDataSource) {
-      searchQuery.append('datasources', pathname.substring(dataSourceIdx + 1));
-    }
-    preserveQueryParameters(searchQuery);
+    // const searchQuery = new URLSearchParams();
+    // if (dataSourceIdx !== -1 && existingDataSource) {
+    //   searchQuery.append('datasources', pathname.substring(dataSourceIdx + 1));
+    // }
+    // preserveQueryParameters(searchQuery);
 
-    navigate({
-      pathname: '/',
-      search: decodeURIComponent(searchQuery.toString()),
-    });
+    // navigate({
+    //   pathname: '/',
+    //   search: decodeURIComponent(searchQuery.toString()),
+    // });
+    window.location.href = 'https://dicomviewer.intranet.intecnus.org.ar/';
   };
 
   const { t } = useTranslation();
@@ -88,6 +89,7 @@ function ViewerHeader({ appConfig }: withAppTypes<{ appConfig: AppTypes.Config }
       onClickReturnButton={onClickReturnButton}
       WhiteLabeling={appConfig.whiteLabeling}
       Secondary={<Toolbar buttonSection="secondary" />}
+      PrimaryRight={<Toolbar buttonSection="primaryRight" />}
       PatientInfo={
         appConfig.showPatientInfo !== PatientInfoVisibility.DISABLED && (
           <HeaderPatientInfo

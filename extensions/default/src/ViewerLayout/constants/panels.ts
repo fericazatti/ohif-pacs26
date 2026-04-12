@@ -4,10 +4,10 @@ const collapsedOutsideBorderSize = 4;
 const collapsedWidth = 25;
 
 const getPanelGroupDefinition = ({
-  leftPanelInitialExpandedWidth = 282,
-  rightPanelInitialExpandedWidth = 280,
+  leftPanelInitialExpandedWidth = 210,
+  rightPanelInitialExpandedWidth = 210,
   leftPanelMinimumExpandedWidth = 145,
-  rightPanelMinimumExpandedWidth = 280,
+  rightPanelMinimumExpandedWidth = 145,
 }) => {
   return {
     groupId: 'viewerLayoutResizablePanelGroup',

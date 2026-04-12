@@ -13,6 +13,19 @@ import { IconPresentationProvider } from '@ohif/ui-next';
 
 import NavBar from '../NavBar';
 
+const ToolbarGroup = ({ label, children }: { label: string; children: ReactNode }) => (
+  <div className="flex flex-col items-center">
+    <span className="mb-[3px] text-[9px] font-bold uppercase tracking-[0.12em] text-[#7A7A88]">
+      {label}
+    </span>
+    <div className="flex items-center gap-[4px]">{children}</div>
+  </div>
+);
+
+const GroupDivider = () => (
+  <div className="mb-[6px] h-9 w-px self-end bg-[#2E2E2E]" />
+);
+
 // Todo: we should move this component to composition and remove props base
 
 interface HeaderProps {
@@ -30,6 +43,7 @@ interface HeaderProps {
   };
   PatientInfo?: ReactNode;
   Secondary?: ReactNode;
+  PrimaryRight?: ReactNode;
   UndoRedo?: ReactNode;
 }
 
@@ -43,6 +57,7 @@ function Header({
   PatientInfo,
   UndoRedo,
   Secondary,
+  PrimaryRight,
   ...props
 }: HeaderProps): ReactNode {
   const onClickReturn = () => {
@@ -60,30 +75,32 @@ function Header({
         isSticky={isSticky}
         {...props}
       >
-        <div className="relative h-[48px] items-center">
-          <div className="absolute left-0 top-1/2 flex -translate-y-1/2 items-center">
-            <div
-              className={classNames(
-                'mr-3 inline-flex items-center',
-                isReturnEnabled && 'cursor-pointer'
+        <div className="flex h-[72px] w-full items-center">
+          {/* Zona izquierda: PatientInfo — ancho fijo igual al panel de estudios */}
+          <div className="flex w-[285px] shrink-0 items-center pl-3">
+            {PatientInfo}
+          </div>
+
+          {/* Zona central: los 3 grupos juntos, separados por divisores sutiles */}
+          <div className="flex flex-1 items-center justify-center">
+            <div className="flex items-end gap-3">
+              {Secondary && (
+                <ToolbarGroup label="VISUALIZACIÓN">{Secondary}</ToolbarGroup>
               )}
-              onClick={onClickReturn}
-              data-cy="return-to-work-list"
-            >
-              {isReturnEnabled && <Icons.ArrowLeft className="text-primary ml-1 h-7 w-7" />}
-              <div className="ml-1">
-                {WhiteLabeling?.createLogoComponentFn?.(React, props) || <Icons.OHIFLogo />}
-              </div>
+              {Secondary && children && <GroupDivider />}
+              {children && <ToolbarGroup label="MOUSE">{children}</ToolbarGroup>}
+              {children && PrimaryRight && <GroupDivider />}
+              {PrimaryRight && (
+                <ToolbarGroup label="OTRAS HERRAMIENTAS">{PrimaryRight}</ToolbarGroup>
+              )}
             </div>
           </div>
-          <div className="absolute top-1/2 left-[250px] h-8 -translate-y-1/2">{Secondary}</div>
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transform">
-            <div className="flex items-center justify-center space-x-2">{children}</div>
-          </div>
-          <div className="absolute right-0 top-1/2 flex -translate-y-1/2 select-none items-center">
-            {UndoRedo}
-            <div className="border-primary-dark mx-1.5 h-[25px] border-r"></div>
-            {PatientInfo}
+
+          {/* Zona extrema derecha: logo + ajustes */}
+          <div className="flex shrink-0 select-none items-center">
+            <div className="ml-1 mr-1">
+              {WhiteLabeling?.createLogoComponentFn?.(React, props) || <Icons.OHIFLogo />}
+            </div>
             <div className="border-primary-dark mx-1.5 h-[25px] border-r"></div>
             <div className="flex-shrink-0">
               <DropdownMenu>
@@ -91,7 +108,7 @@ function Header({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-primary hover:bg-primary-dark mt-2 h-full w-full"
+                    className="text-primary hover:bg-primary-dark"
                   >
                     <Icons.GearSettings />
                   </Button>

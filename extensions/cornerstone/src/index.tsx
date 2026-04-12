@@ -78,8 +78,7 @@ const OHIFCornerstoneViewport = props => {
 const stackRetrieveOptions = {
   retrieveOptions: {
     single: {
-      streaming: true,
-      decodeLevel: 1,
+      streaming: false,
     },
   },
 };

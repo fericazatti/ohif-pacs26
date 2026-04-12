@@ -24,6 +24,7 @@ function PanelStudyBrowser({
   customMapDisplaySets,
   onClickUntrack,
   onDoubleClickThumbnailHandlerCallBack,
+  showSettings: showSettingsProp,
 }) {
   const { servicesManager, commandsManager, extensionManager } = useSystem();
   const { displaySetService, customizationService } = servicesManager.services;
@@ -142,6 +143,7 @@ function PanelStudyBrowser({
         return {
           studyInstanceUid: qidoStudy.StudyInstanceUID,
           date: formatDate(qidoStudy.StudyDate) || '',
+          studyDate: qidoStudy.StudyDate || '', // raw DICOM YYYYMMDD para ordenamiento
           description: qidoStudy.StudyDescription,
           modalities: qidoStudy.ModalitiesInStudy,
           numInstances: Number(qidoStudy.NumInstances),
@@ -360,6 +362,14 @@ function PanelStudyBrowser({
     if (!shouldCollapseStudy) {
       const madeInClient = true;
       requestDisplaySetCreationForStudy(displaySetService, StudyInstanceUID, madeInClient);
+
+      // After the accordion animation and study loading settle, force Cornerstone
+      // to recalibrate canvas positions. A mid-animation reflow can cause
+      // getBoundingClientRect() to return stale values, making tool coordinates
+      // appear offset until the page is refreshed.
+      setTimeout(() => {
+        (servicesManager.services as any).cornerstoneViewportService?.resize();
+      }, 400);
     }
   }
 
@@ -370,8 +380,11 @@ function PanelStudyBrowser({
       const element = document.getElementById(`thumbnail-${displaySetInstanceUID}`);
 
       if (element && typeof element.scrollIntoView === 'function') {
-        // TODO: Any way to support IE here?
-        element.scrollIntoView({ behavior: 'smooth' });
+        // block:'nearest' only scrolls the minimum needed within the ScrollArea
+        // and avoids scrolling ancestor containers (including the document).
+        // The default block:'start' would scroll the entire page upward because
+        // overflow:hidden does NOT prevent programmatic scrollIntoView scrolling.
+        element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
 
         setJumpToDisplaySet(null);
       }
@@ -406,20 +419,6 @@ function PanelStudyBrowser({
 
   return (
     <>
-      <>
-        <PanelStudyBrowserHeader
-          viewPresets={viewPresets}
-          updateViewPresetValue={updateViewPresetValue}
-          actionIcons={actionIcons}
-          updateActionIconValue={updateActionIconValue}
-        />
-        <Separator
-          orientation="horizontal"
-          className="bg-black"
-          thickness="2px"
-        />
-      </>
-
       <StudyBrowser
         tabs={tabs}
         servicesManager={servicesManager}
@@ -433,8 +432,9 @@ function PanelStudyBrowser({
         onClickThumbnail={() => {}}
         onDoubleClickThumbnail={onDoubleClickThumbnailHandler}
         activeDisplaySetInstanceUIDs={activeDisplaySetInstanceUIDs}
-        showSettings={actionIcons.find(icon => icon.id === 'settings')?.value}
+        showSettings={showSettingsProp ?? actionIcons.find(icon => icon.id === 'settings')?.value}
         viewPresets={viewPresets}
+        primaryStudyInstanceUIDs={StudyInstanceUIDs}
         ThumbnailMenuItems={MoreDropdownMenu({
           commandsManager,
           servicesManager,
@@ -474,7 +474,19 @@ function _mapDataSourceStudies(studies) {
   });
 }
 
+function _isScreenshotSeries(ds) {
+  // Series of screenshots minted by the in-app DICOM capture (see
+  // captureSecondaryCapture.ts). Identified by the deterministic UID
+  // `${StudyInstanceUID}.9999`, with SeriesNumber 9999 + Modality OT as fallback.
+  if (ds?.StudyInstanceUID && ds?.SeriesInstanceUID === `${ds.StudyInstanceUID}.9999`) {
+    return true;
+  }
+  return ds?.SeriesNumber === 9999 && ds?.Modality === 'OT';
+}
+
 function _mapDisplaySets(displaySets, displaySetLoadingState, thumbnailImageSrcMap, viewports) {
+  const screenshotDisplaySets = [];
+  const docDisplaySets = [];
   const thumbnailDisplaySets = [];
   const thumbnailNoImageDisplaySets = [];
   displaySets
@@ -482,9 +494,16 @@ function _mapDisplaySets(displaySets, displaySetLoadingState, thumbnailImageSrcM
     .forEach(ds => {
       const { thumbnailSrc, displaySetInstanceUID } = ds;
       const componentType = _getComponentType(ds);
+      const isDoc = ds.Modality === 'DOC';
+      const isScreenshot = _isScreenshotSeries(ds);
 
-      const array =
-        componentType === 'thumbnail' ? thumbnailDisplaySets : thumbnailNoImageDisplaySets;
+      const array = isScreenshot
+        ? screenshotDisplaySets
+        : isDoc
+          ? docDisplaySets
+          : componentType === 'thumbnail'
+            ? thumbnailDisplaySets
+            : thumbnailNoImageDisplaySets;
 
       const loadingProgress = displaySetLoadingState?.[displaySetInstanceUID];
 
@@ -496,7 +515,7 @@ function _mapDisplaySets(displaySets, displaySetLoadingState, thumbnailImageSrcM
         seriesDate: formatDate(ds.SeriesDate),
         numInstances: ds.numImageFrames ?? ds.instances?.length,
         loadingProgress,
-        countIcon: ds.countIcon,
+        countIcon: isDoc ? 'Clipboard' : ds.countIcon,
         messages: ds.messages,
         StudyInstanceUID: ds.StudyInstanceUID,
         componentType,
@@ -504,13 +523,20 @@ function _mapDisplaySets(displaySets, displaySetLoadingState, thumbnailImageSrcM
         dragData: {
           type: 'displayset',
           displaySetInstanceUID,
-          // .. Any other data to pass
         },
         isHydratedForDerivedDisplaySet: ds.isHydrated,
+        isScreenshot,
       });
     });
 
-  return [...thumbnailDisplaySets, ...thumbnailNoImageDisplaySets];
+  // Capturas de pantalla primero, luego DOC (informes), imágenes y por último
+  // otros sin imagen (SR, SEG, etc.)
+  return [
+    ...screenshotDisplaySets,
+    ...docDisplaySets,
+    ...thumbnailDisplaySets,
+    ...thumbnailNoImageDisplaySets,
+  ];
 }
 
 function _getComponentType(ds) {

@@ -13,3 +13,7 @@ curl -i "http://10.73.173.205:8080/dcm4chee-arc/aets/DCM4CHEE/rs/studies?limit=1
 
 ##desplegar en modo desarrollo --
 APP_CONFIG=config/local-dev.js yarn run dev
+
+## to get acces token 
+curl -k -X POST "https://10.73.173.205:8843/realms/dcm4che/protocol/openid-connect/token" \                                                                          │
+│                  

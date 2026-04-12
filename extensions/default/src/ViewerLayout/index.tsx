@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
+import { ChevronRight, ChevronLeft } from 'lucide-react';
 
 import { InvestigationalUseDialog } from '@ohif/ui-next';
 import { HangingProtocolService, CommandsManager } from '@ohif/core';
@@ -81,10 +82,15 @@ function ViewerLayout({
   useEffect(() => {
     document.body.classList.add('bg-black');
     document.body.classList.add('overflow-hidden');
+    // Prevent the html element from scrolling when interactive elements inside
+    // the viewer receive focus (browser default scroll-to-focus behavior walks
+    // up the DOM tree and can scroll <html> even if <body> has overflow:hidden)
+    document.documentElement.classList.add('overflow-hidden');
 
     return () => {
       document.body.classList.remove('bg-black');
       document.body.classList.remove('overflow-hidden');
+      document.documentElement.classList.remove('overflow-hidden');
     };
   }, []);
 
@@ -159,7 +165,7 @@ function ViewerLayout({
       />
       <div
         className="relative flex w-full flex-row flex-nowrap items-stretch overflow-hidden bg-black"
-        style={{ height: 'calc(100vh - 52px' }}
+        style={{ height: 'calc(100vh - 72px)' }}
       >
         <React.Fragment>
           {showLoadingIndicator && <LoadingIndicatorProgress className="h-full w-full bg-black" />}
@@ -187,6 +193,10 @@ function ViewerLayout({
               <div className="flex h-full flex-1 flex-col">
                 <div
                   className="relative flex h-full flex-1 items-center justify-center overflow-hidden bg-black"
+                  style={{
+                    paddingLeft: hasLeftPanels && leftPanelClosedState ? 18 : 0,
+                    paddingRight: hasRightPanels && rightPanelClosedState ? 18 : 0,
+                  }}
                   onMouseEnter={handleMouseEnter}
                 >
                   <ViewportGridComp
@@ -194,6 +204,30 @@ function ViewerLayout({
                     viewportComponents={viewportComponents}
                     commandsManager={commandsManager}
                   />
+                  {/* Slot lateral con el botón para reabrir el panel izquierdo cuando está colapsado */}
+                  {hasLeftPanels && leftPanelClosedState && (
+                    <div className="pointer-events-none absolute inset-y-0 left-0 z-30 flex w-[18px] items-start justify-center border-r border-[#2A2A2A] bg-[#141414] pt-3">
+                      <button
+                        onClick={() => leftPanelProps.onOpen?.()}
+                        title="Mostrar panel de estudios"
+                        className="pointer-events-auto flex h-7 w-full cursor-pointer items-center justify-center text-[#1FB250] hover:bg-[#1E1E1E]"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                  {/* Slot lateral con el botón para reabrir el panel derecho cuando está colapsado */}
+                  {hasRightPanels && rightPanelClosedState && (
+                    <div className="pointer-events-none absolute inset-y-0 right-0 z-30 flex w-[18px] items-start justify-center border-l border-[#2A2A2A] bg-[#141414] pt-3">
+                      <button
+                        onClick={() => rightPanelProps.onOpen?.()}
+                        title="Mostrar panel"
+                        className="pointer-events-auto flex h-7 w-full cursor-pointer items-center justify-center text-[#1FB250] hover:bg-[#1E1E1E]"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </ResizablePanel>

@@ -13,6 +13,9 @@ import CinePlayer from '../components/CinePlayer';
 import type { Types } from '@ohif/core';
 
 import OHIFViewportActionCorners from '../components/OHIFViewportActionCorners';
+import { MPRProjectionControlsViewportOverlay } from '../components/MPRProjectionControls';
+import { IrregularSpacingWarningOverlay } from '../components/IrregularSpacingWarning';
+import { ScreenshotDeleteOverlay } from '../components/ScreenshotDeleteOverlay';
 import { getViewportPresentations } from '../utils/presentations/getViewportPresentations';
 import { useSynchronizersStore } from '../stores/useSynchronizersStore';
 import ActiveViewportBehavior from '../utils/ActiveViewportBehavior';
@@ -338,6 +341,9 @@ const OHIFCornerstoneViewport = React.memo(
             viewportId={viewportId}
             servicesManager={servicesManager}
           />
+          <MPRProjectionControlsViewportOverlay viewportId={viewportId} />
+          <IrregularSpacingWarningOverlay viewportId={viewportId} />
+          <ScreenshotDeleteOverlay viewportId={viewportId} />
         </div>
         {/* top offset of 24px to account for ViewportActionCorners. */}
         <div className="absolute top-[24px] w-full">

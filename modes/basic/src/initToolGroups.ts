@@ -20,8 +20,12 @@ function initDefaultToolGroup(extensionManager, toolGroupService, commandsManage
   const tools = {
     active: [
       {
-        toolName: toolNames.WindowLevel,
-        bindings: [{ mouseButton: Enums.MouseBindings.Primary }],
+        toolName: toolNames.StackScroll,
+        bindings: [
+          { mouseButton: Enums.MouseBindings.Primary }, // Clic Izquierdo
+          { mouseButton: Enums.MouseBindings.Wheel },   // Rueda del mouse
+          { numTouchPoints: 3 }
+        ],
       },
       {
         toolName: toolNames.Pan,
@@ -31,12 +35,9 @@ function initDefaultToolGroup(extensionManager, toolGroupService, commandsManage
         toolName: toolNames.Zoom,
         bindings: [{ mouseButton: Enums.MouseBindings.Secondary }, { numTouchPoints: 2 }],
       },
-      {
-        toolName: toolNames.StackScroll,
-        bindings: [{ mouseButton: Enums.MouseBindings.Wheel }, { numTouchPoints: 3 }],
-      },
     ],
     passive: [
+      { toolName: toolNames.WindowLevel }, // <--- Agregado aquí (antes estaba en active)
       { toolName: toolNames.Length },
       {
         toolName: toolNames.ArrowAnnotate,
@@ -65,7 +66,7 @@ function initDefaultToolGroup(extensionManager, toolGroupService, commandsManage
       { toolName: toolNames.EllipticalROI },
       { toolName: toolNames.CircleROI },
       { toolName: toolNames.RectangleROI },
-      { toolName: toolNames.StackScroll },
+      // { toolName: toolNames.StackScroll }, <--- Eliminado de aquí para evitar conflictos
       { toolName: toolNames.Angle },
       { toolName: toolNames.CobbAngle },
       { toolName: toolNames.Magnify },

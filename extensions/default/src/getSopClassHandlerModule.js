@@ -220,15 +220,86 @@ function getDisplaySetsFromSeries(instances) {
   });
 
   if (stackableInstances.length) {
-    const displaySet = makeDisplaySet(stackableInstances, displaySets.length);
-    displaySet.setAttribute('studyInstanceUid', instances[0].StudyInstanceUID);
-    displaySet.setAttributes({
-      sopClassUids,
-    });
-    displaySets.push(displaySet);
+    // Always emit the full series as the primary displaySet so the radiologist
+    // keeps the complete head-to-feet stack scroll. When the series mixes
+    // acquisitions (e.g. helical body + axial head/feet), the full set may not
+    // be reconstructable for MPR — in that case we additionally emit the
+    // dominant uniform-geometry subset as a secondary displaySet labeled
+    // "[Xmm MPR]" so MPR works on the well-formed subvolume.
+    const fullDisplaySet = makeDisplaySet(stackableInstances, displaySets.length);
+    fullDisplaySet.setAttribute('studyInstanceUid', instances[0].StudyInstanceUID);
+    fullDisplaySet.setAttributes({ sopClassUids });
+    displaySets.push(fullDisplaySet);
+
+    if (!fullDisplaySet.isReconstructable) {
+      const mprSubset = pickMprSubset(stackableInstances);
+      if (mprSubset) {
+        const subsetDisplaySet = makeDisplaySet(mprSubset.instances, displaySets.length);
+        subsetDisplaySet.setAttribute('studyInstanceUid', instances[0].StudyInstanceUID);
+        subsetDisplaySet.setAttributes({ sopClassUids });
+        if (subsetDisplaySet.isReconstructable) {
+          const baseDescription = subsetDisplaySet.SeriesDescription || '';
+          const suffix = `[${mprSubset.label} MPR]`;
+          const annotated = baseDescription ? `${baseDescription} ${suffix}` : suffix;
+          subsetDisplaySet.setAttributes({
+            SeriesDescription: annotated,
+            label: annotated,
+          });
+          displaySets.push(subsetDisplaySet);
+        }
+      }
+    }
   }
 
   return displaySets;
+}
+
+const MIN_SUBSET_SIZE = 10;
+
+// Picks the largest subset of instances sharing the same SliceThickness and
+// ImageOrientationPatient. Returns null if no group is large enough or if the
+// dominant group already covers ~all the instances (no benefit to splitting).
+function pickMprSubset(instances) {
+  if (instances.length < MIN_SUBSET_SIZE * 2) {
+    return null;
+  }
+
+  const groups = new Map();
+  for (const instance of instances) {
+    const thicknessRaw = instance.SliceThickness;
+    const thickness =
+      thicknessRaw != null && !Number.isNaN(Number(thicknessRaw))
+        ? Number(thicknessRaw).toFixed(2)
+        : 'unknown';
+    const iop = instance.ImageOrientationPatient;
+    const iopKey =
+      Array.isArray(iop) && iop.length === 6
+        ? iop.map(v => Number(v).toFixed(2)).join(',')
+        : 'unknown';
+    const key = `${thickness}|${iopKey}`;
+    if (!groups.has(key)) {
+      groups.set(key, { instances: [], thickness });
+    }
+    groups.get(key).instances.push(instance);
+  }
+
+  const sorted = [...groups.values()].sort((a, b) => b.instances.length - a.instances.length);
+  const dominant = sorted[0];
+
+  if (!dominant || dominant.instances.length < MIN_SUBSET_SIZE) {
+    return null;
+  }
+
+  // If the dominant group is essentially the whole series, splitting won't
+  // help (the issue is something other than mixed acquisitions).
+  if (dominant.instances.length >= instances.length * 0.95) {
+    return null;
+  }
+
+  return {
+    instances: dominant.instances,
+    label: dominant.thickness !== 'unknown' ? `${dominant.thickness}mm` : 'subset',
+  };
 }
 
 const sopClassUids = [

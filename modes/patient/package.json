@@ -1,0 +1,44 @@
+{
+  "name": "@ohif/mode-patient",
+  "version": "3.12.0-beta.113",
+  "description": "Modo paciente: visualizador minimo, solo lectura, sin tools de procesamiento",
+  "author": "INTECNUS",
+  "license": "MIT",
+  "main": "dist/ohif-mode-patient.js",
+  "module": "src/index.tsx",
+  "files": [
+    "dist/**",
+    "README.md"
+  ],
+  "keywords": [
+    "ohif-mode"
+  ],
+  "engines": {
+    "node": ">=14",
+    "npm": ">=6",
+    "yarn": ">=1.16.0"
+  },
+  "peerDependencies": {
+    "@ohif/core": "3.12.0-beta.113",
+    "@ohif/extension-cornerstone": "3.12.0-beta.113",
+    "@ohif/extension-default": "3.12.0-beta.113",
+    "@ohif/extension-dicom-pdf": "3.12.0-beta.113",
+    "@ohif/extension-dicom-video": "3.12.0-beta.113",
+    "@ohif/mode-basic": "3.12.0-beta.113"
+  },
+  "dependencies": {
+    "@babel/runtime": "7.28.2"
+  },
+  "devDependencies": {
+    "webpack": "5.95.0",
+    "webpack-merge": "5.10.0"
+  },
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development webpack --config .webpack/webpack.dev.js --watch --output-pathinfo",
+    "build": "cross-env NODE_ENV=production webpack --config .webpack/webpack.prod.js",
+    "build:package": "yarn run build",
+    "start": "yarn run dev",
+    "test:unit": "jest --watchAll",
+    "test:unit:ci": "jest --ci --runInBand --collectCoverage --passWithNoTests"
+  }
+}

@@ -705,7 +705,11 @@ function createDicomWebApi(dicomWebConfig: DicomWebConfig, servicesManager) {
   };
 
   if (dicomWebConfig.supportsReject) {
-    implementation.reject = dcm4cheeReject(dicomWebConfig.wadoRoot, getAuthorizationHeader);
+    // `getAuthorizationHeader` is assigned inside `implementation.initialize`,
+    // so at this point it is still undefined. Defer the lookup with a closure.
+    implementation.reject = dcm4cheeReject(dicomWebConfig.wadoRoot, () =>
+      getAuthorizationHeader()
+    );
   }
 
   return IWebApiDataSource.create(implementation);

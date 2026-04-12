@@ -12,17 +12,6 @@ const DEFAULT_SIZE = 512;
 const MAX_TEXTURE_SIZE = 10000;
 const VIEWPORT_ID = 'cornerstone-viewport-download-form';
 
-const FILE_TYPE_OPTIONS = [
-  {
-    value: 'jpg',
-    label: 'JPG',
-  },
-  {
-    value: 'png',
-    label: 'PNG',
-  },
-];
-
 type ViewportDownloadFormProps = {
   hide: () => void;
   activeViewportId: string;
@@ -32,23 +21,24 @@ const CornerstoneViewportDownloadForm = ({
   hide,
   activeViewportId: activeViewportIdProp,
 }: ViewportDownloadFormProps) => {
-  const { servicesManager } = useSystem();
+  const { servicesManager, commandsManager } = useSystem();
   const { customizationService, cornerstoneViewportService } = servicesManager.services;
   const [showAnnotations, setShowAnnotations] = useState(true);
-  const [viewportDimensions, setViewportDimensions] = useState({
-    width: DEFAULT_SIZE,
-    height: DEFAULT_SIZE,
-  });
-
-  const warningState = customizationService.getCustomization('viewportDownload.warningMessage') as {
-    enabled: boolean;
-    value: string;
-  };
 
   const refViewportEnabledElementOHIF = OHIFgetEnabledElement(activeViewportIdProp);
   const activeViewportElement = refViewportEnabledElementOHIF?.element;
-  const { viewportId: activeViewportId, renderingEngineId } =
+  const { viewportId: activeViewportId, renderingEngineId, viewport: sourceViewport } =
     getEnabledElement(activeViewportElement);
+
+  // Seed the modal with the source viewport's real canvas dimensions so the
+  // initial capture preserves the on-screen quality. The user can still tweak
+  // width/height in the form (capped at MAX_TEXTURE_SIZE).
+  const sourceCanvas = sourceViewport?.canvas as HTMLCanvasElement | undefined;
+  const initialDimensions = {
+    width: Math.min(sourceCanvas?.width || DEFAULT_SIZE, MAX_TEXTURE_SIZE),
+    height: Math.min(sourceCanvas?.height || DEFAULT_SIZE, MAX_TEXTURE_SIZE),
+  };
+  const [viewportDimensions, setViewportDimensions] = useState(initialDimensions);
 
   const renderingEngine = cornerstoneViewportService.getRenderingEngine();
   const toolGroup = ToolGroupManager.getToolGroupForViewport(activeViewportId, renderingEngineId);
@@ -218,15 +208,40 @@ const CornerstoneViewportDownloadForm = ({
   const handleDownload = async (filename: string, fileType: string) => {
     const divForDownloadViewport = document.querySelector(
       `div[data-viewport-uid="${VIEWPORT_ID}"]`
-    );
+    ) as HTMLElement | null;
 
     if (!divForDownloadViewport) {
       console.debug('No viewport found for download');
       return;
     }
 
-    const canvas = await html2canvas(divForDownloadViewport as HTMLElement);
-    downloadUrl(canvas.toDataURL(`image/${fileType}`, 1.0));
+    // The modal scales the preview with CSS transform to fit its frame; html2canvas
+    // would otherwise capture at the scaled (downsampled) size. Strip the transform
+    // for the duration of the rasterization so the output matches the real canvas.
+    const previousTransform = divForDownloadViewport.style.transform;
+    const previousTransformOrigin = divForDownloadViewport.style.transformOrigin;
+    divForDownloadViewport.style.transform = 'none';
+    divForDownloadViewport.style.transformOrigin = '';
+    try {
+      const canvas = await html2canvas(divForDownloadViewport);
+      downloadUrl(canvas.toDataURL(`image/${fileType}`, 1.0));
+    } finally {
+      divForDownloadViewport.style.transform = previousTransform;
+      divForDownloadViewport.style.transformOrigin = previousTransformOrigin;
+    }
+  };
+
+  const handleSaveDicom = async () => {
+    const divForDownloadViewport = document.querySelector(
+      `div[data-viewport-uid="${VIEWPORT_ID}"]`
+    );
+    if (!divForDownloadViewport) {
+      console.debug('No viewport found for DICOM save');
+      return;
+    }
+    commandsManager.runCommand('saveViewportAsSecondaryCapture', {
+      viewportElement: divForDownloadViewport as HTMLElement,
+    });
   };
 
   const ViewportDownloadFormNew = customizationService.getCustomization(
@@ -237,7 +252,6 @@ const CornerstoneViewportDownloadForm = ({
     <ViewportDownloadFormNew
       onClose={hide}
       defaultSize={DEFAULT_SIZE}
-      fileTypeOptions={FILE_TYPE_OPTIONS}
       viewportId={VIEWPORT_ID}
       showAnnotations={showAnnotations}
       onAnnotationsChange={setShowAnnotations}
@@ -246,7 +260,7 @@ const CornerstoneViewportDownloadForm = ({
       onEnableViewport={handleEnableViewport}
       onDisableViewport={handleDisableViewport}
       onDownload={handleDownload}
-      warningState={warningState}
+      onSaveDicom={handleSaveDicom}
     />
   );
 };

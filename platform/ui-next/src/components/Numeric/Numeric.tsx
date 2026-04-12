@@ -165,10 +165,11 @@ function NumericMetaLabel({ children, showValue, className }: NumericMetaLabelPr
 interface SingleRangeProps {
   showNumberInput?: boolean;
   sliderClassName?: string;
+  thumbClassName?: string;
   numberInputClassName?: string;
 }
 
-function SingleRange({ showNumberInput, sliderClassName, numberInputClassName }: SingleRangeProps) {
+function SingleRange({ showNumberInput, sliderClassName, thumbClassName, numberInputClassName }: SingleRangeProps) {
   const ctx = useContext(NumericMetaContext);
   if (!ctx) {
     throw new Error('SingleRange must be used inside <Numeric.Container>.');
@@ -201,6 +202,7 @@ function SingleRange({ showNumberInput, sliderClassName, numberInputClassName }:
     <div className="flex flex-1 items-center space-x-2">
       <Slider
         className={cn('flex-1', sliderClassName)}
+        thumbClassName={thumbClassName}
         value={[singleValue]}
         min={min}
         max={max}

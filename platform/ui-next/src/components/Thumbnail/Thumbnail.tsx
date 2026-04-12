@@ -62,26 +62,21 @@ const Thumbnail = ({
     return (
       <div
         className={classnames(
-          'flex h-full w-full flex-col items-center justify-start gap-[2px] p-[4px]', // Cambié justify-center a justify-start
+          'flex h-full w-full flex-col items-start justify-start gap-[2px] p-[3px]',
           isActive && 'bg-popover rounded'
         )}
       >
-        {/* CAMBIO: Contenedor de imagen CUADRADO usando style para asegurar compatibilidad */}
-        <div 
-          className="w-full relative" 
-          style={{ aspectRatio: '1/1' }} 
-        >
+        {/* Contenedor de imagen cuadrado responsive */}
+        <div className="relative w-full" style={{ aspectRatio: '1 / 1' }}>
           <div className="relative bg-black h-full w-full">
             {imageSrc ? (
               <img
                 src={imageSrc}
                 alt={imageAltText}
-                // CAMBIO: h-full para llenar el cuadrado
                 className="h-full w-full rounded object-contain"
                 crossOrigin="anonymous"
               />
             ) : (
-              // CAMBIO: h-full para llenar el cuadrado
               <div className="bg-background h-full w-full rounded"></div>
             )}
 
@@ -148,26 +143,26 @@ const Thumbnail = ({
         </div>
         
         {/* Contenedor de texto (Description) */}
-        <div className="flex h-[52px] w-full flex-col justify-start pt-px">
+        <div className="flex h-[26px] w-full flex-col justify-start pt-px">
           <Tooltip>
             <TooltipContent>{description}</TooltipContent>
             <TooltipTrigger className="w-full">
               <div
-                className="min-h-[18px] w-full overflow-hidden text-ellipsis whitespace-nowrap pb-0.5 pl-1 text-left text-[12px] font-normal leading-4 text-white"
+                className="min-h-[10px] w-full overflow-hidden text-ellipsis whitespace-nowrap pb-0.5 pl-1 text-left text-[9px] font-normal leading-3 text-white"
                 data-cy="series-description-label"
               >
                 {description}
               </div>
             </TooltipTrigger>
           </Tooltip>
-          <div className="flex h-[12px] items-center gap-[7px] overflow-hidden">
-            <div className="text-muted-foreground pl-1 text-[11px]"> S:{seriesNumber}</div>
-            <div className="text-muted-foreground text-[11px]">
-              <div className="flex items-center gap-[4px]">
+          <div className="flex h-[10px] items-center gap-[5px] overflow-hidden">
+            <div className="text-muted-foreground pl-1 text-[8px]">S:{seriesNumber}</div>
+            <div className="text-muted-foreground text-[8px]">
+              <div className="flex items-center gap-[3px]">
                 {countIcon ? (
-                  React.createElement(Icons[countIcon] || Icons.MissingIcon, { className: 'w-3' })
+                  React.createElement(Icons[countIcon] || Icons.MissingIcon, { className: 'h-2 w-2 flex-shrink-0' })
                 ) : (
-                  <Icons.InfoSeries className="w-3" />
+                  <Icons.InfoSeries className="h-2 w-2 flex-shrink-0" />
                 )}
                 <div>{numInstances}</div>
               </div>
@@ -179,6 +174,7 @@ const Thumbnail = ({
   };
 
   const renderListPreset = () => {
+    const isDoc = modality === 'DOC';
     return (
       <div
         className={classnames(
@@ -186,49 +182,78 @@ const Thumbnail = ({
           isActive && 'bg-popover rounded'
         )}
       >
-        <div className="relative flex h-[32px] w-full items-center gap-[8px] overflow-hidden">
-          <div
-            className={classnames(
-              'h-[32px] w-[4px] min-w-[4px] rounded',
-              isActive || isHydratedForDerivedDisplaySet ? 'bg-highlight' : 'bg-primary/65',
-              loadingProgress && loadingProgress < 1 && 'bg-primary/25'
-            )}
-          ></div>
-          <div className="flex h-full w-[calc(100%-12px)] flex-col justify-start">
+        <div
+          className={classnames(
+            'relative flex w-full items-center gap-[10px] overflow-hidden',
+            isDoc ? 'h-[64px]' : 'h-[36px]'
+          )}
+        >
+          {isDoc ? (
+            /* DOC: ícono clipboard grande en gris claro */
+            <div className="flex h-[60px] w-[60px] min-w-[60px] items-center justify-center rounded bg-[#252525] text-[#C8C8D0]">
+              <Icons.Clipboard className="h-[40px] w-[40px]" />
+            </div>
+          ) : (
+            <div
+              className={classnames(
+                'h-[32px] w-[4px] min-w-[4px] rounded',
+                isActive || isHydratedForDerivedDisplaySet ? 'bg-highlight' : 'bg-primary/65',
+                loadingProgress && loadingProgress < 1 && 'bg-primary/25'
+              )}
+            ></div>
+          )}
+          <div className="flex h-full w-[calc(100%-12px)] flex-col justify-center">
             <div className="flex items-center gap-[7px]">
-              <div
-                className="text-[13px] font-semibold text-white"
-                data-cy="series-modality-label"
-              >
-                {modality}
-              </div>
+              {!isDoc && (
+                <div
+                  className="text-[13px] font-semibold text-white"
+                  data-cy="series-modality-label"
+                >
+                  {modality}
+                </div>
+              )}
               <Tooltip>
                 <TooltipContent>{description}</TooltipContent>
                 <TooltipTrigger className="w-full overflow-hidden">
                   <div
-                    className="max-w-[160px] overflow-hidden overflow-ellipsis whitespace-nowrap text-left text-[13px] font-normal text-white"
+                    className={classnames(
+                      'max-w-[200px] overflow-hidden overflow-ellipsis whitespace-nowrap text-left font-normal',
+                      isDoc ? 'text-[12px] text-[#D0D0D8]' : 'text-[13px] text-white'
+                    )}
                     data-cy="series-description-label"
                   >
-                    {description}
+                    {description || (isDoc ? 'Informe médico' : '')}
                   </div>
                 </TooltipTrigger>
               </Tooltip>
             </div>
 
-            <div className="flex h-[12px] items-center gap-[7px] overflow-hidden">
-              <div className="text-muted-foreground text-[12px]"> S:{seriesNumber}</div>
-              <div className="text-muted-foreground text-[12px]">
-                <div className="flex items-center gap-[4px]">
-                  {' '}
-                  {countIcon ? (
-                    React.createElement(Icons[countIcon] || Icons.MissingIcon, { className: 'w-3' })
-                  ) : (
-                    <Icons.InfoSeries className="w-3" />
-                  )}
-                  <div>{numInstances}</div>
+            {!isDoc && (
+              <div className="flex h-[12px] items-center gap-[7px] overflow-hidden">
+                <div className="text-muted-foreground text-[12px]"> S:{seriesNumber}</div>
+                <div className="text-muted-foreground text-[12px]">
+                  <div className="flex items-center gap-[4px]">
+                    {' '}
+                    {countIcon ? (
+                      React.createElement(Icons[countIcon] || Icons.MissingIcon, { className: 'h-3 w-3 flex-shrink-0' })
+                    ) : (
+                      <Icons.InfoSeries className="h-3 w-3 flex-shrink-0" />
+                    )}
+                    <div>{numInstances}</div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+            {isDoc && (
+              <div className="flex h-[12px] items-center gap-[6px] overflow-hidden">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#1FB250]">
+                  DOC
+                </span>
+                <span className="text-[10px] text-[#707078]">
+                  {numInstances} {numInstances === 1 ? 'archivo' : 'archivos'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex h-full items-center gap-[4px]">
@@ -278,7 +303,6 @@ const Thumbnail = ({
       className={classnames(
         className,
         'bg-muted hover:bg-primary/30 group flex cursor-pointer select-none flex-col rounded outline-none',
-        // CAMBIO FINAL: h-auto para permitir que crezca, en lugar de h-[170px]
         viewPreset === 'thumbnails' && 'h-auto w-full',
         viewPreset === 'list' && 'h-[40px] w-full'
       )}

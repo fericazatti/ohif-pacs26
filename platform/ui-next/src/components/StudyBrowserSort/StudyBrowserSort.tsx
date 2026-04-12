@@ -15,9 +15,9 @@ export function StudyBrowserSort({
   // Todo: this should not be here, no servicesManager should be in ui-next, only
   // customization service
   const { customizationService, displaySetService } = servicesManager.services;
-  const sortFunctions = customizationService.getCustomization('studyBrowser.sortFunctions');
+  const sortFunctions = customizationService.getCustomization('studyBrowser.sortFunctions') ?? [];
 
-  const [selectedSort, setSelectedSort] = useState(sortFunctions[0]);
+  const [selectedSort, setSelectedSort] = useState(sortFunctions[0] ?? null);
   const [sortDirection, setSortDirection] = useState('ascending');
 
   const handleSortChange = sortFunction => {
@@ -30,20 +30,26 @@ export function StudyBrowserSort({
   };
 
   useEffect(() => {
-    displaySetService.sortDisplaySets(selectedSort.sortFunction, sortDirection);
+    if (selectedSort?.sortFunction) {
+      displaySetService.sortDisplaySets(selectedSort.sortFunction, sortDirection);
+    }
   }, [displaySetService, selectedSort, sortDirection]);
 
   useEffect(() => {
     const SubscriptionDisplaySetsChanged = displaySetService.subscribe(
       displaySetService.EVENTS.DISPLAY_SETS_CHANGED,
       () => {
-        displaySetService.sortDisplaySets(selectedSort.sortFunction, sortDirection, true);
+        if (selectedSort?.sortFunction) {
+          displaySetService.sortDisplaySets(selectedSort.sortFunction, sortDirection, true);
+        }
       }
     );
     const SubscriptionDisplaySetMetaDataInvalidated = displaySetService.subscribe(
       displaySetService.EVENTS.DISPLAY_SET_SERIES_METADATA_INVALIDATED,
       () => {
-        displaySetService.sortDisplaySets(selectedSort.sortFunction, sortDirection, true);
+        if (selectedSort?.sortFunction) {
+          displaySetService.sortDisplaySets(selectedSort.sortFunction, sortDirection, true);
+        }
       }
     );
 
@@ -52,6 +58,10 @@ export function StudyBrowserSort({
       SubscriptionDisplaySetMetaDataInvalidated.unsubscribe();
     };
   }, [displaySetService, selectedSort, sortDirection]);
+
+  if (!sortFunctions.length || !selectedSort) {
+    return null;
+  }
 
   const containerClassName = compact
     ? 'flex min-w-[140px] max-w-[200px] items-center gap-1'
@@ -66,7 +76,7 @@ export function StudyBrowserSort({
         <Tooltip>
           <TooltipTrigger className="w-full overflow-hidden">
             <DropdownMenuTrigger className={triggerClassName}>
-              {selectedSort.label}
+              {selectedSort?.label}
             </DropdownMenuTrigger>
           </TooltipTrigger>
           <TooltipContent>{selectedSort.label}</TooltipContent>

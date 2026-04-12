@@ -16,29 +16,101 @@ const ThumbnailList = ({
   // Use the dynamic height hook on the parent container
   const { ref, maxHeight } = useDynamicMaxHeight(thumbnails);
 
-  // Filter thumbnails into list items and thumbnail items
-  const listItems = thumbnails?.filter(
-    ({ componentType }) => componentType === 'thumbnailNoImage' || viewPreset === 'list'
+  // Capturas de pantalla primero, después DOC (informes), después imágenes
+  // y por último las series sin imagen.
+  // Detección de capturas: serie OT con SeriesNumber 9999 (lo que escribe
+  // captureSecondaryCapture.ts) o el flag isScreenshot pasado por el panel.
+  const isScreenshotThumb = (t: { isScreenshot?: boolean; modality?: string; seriesNumber?: unknown }) =>
+    t?.isScreenshot === true || (Number(t?.seriesNumber) === 9999 && t?.modality === 'OT');
+
+  const screenshotItems = thumbnails?.filter(isScreenshotThumb);
+
+  const docItems = thumbnails?.filter(
+    t => t.modality === 'DOC' && !isScreenshotThumb(t)
   );
 
   const thumbnailItems = thumbnails?.filter(
-    ({ componentType }) => componentType !== 'thumbnailNoImage' && viewPreset === 'thumbnails'
+    t =>
+      !isScreenshotThumb(t) &&
+      t.componentType !== 'thumbnailNoImage' &&
+      viewPreset === 'thumbnails' &&
+      t.modality !== 'DOC'
+  );
+
+  const listItems = thumbnails?.filter(
+    t =>
+      !isScreenshotThumb(t) &&
+      t.modality !== 'DOC' &&
+      (t.componentType === 'thumbnailNoImage' || viewPreset === 'list')
   );
 
   return (
     <div className="flex flex-col">
       <div
         ref={ref}
-        className="flex flex-col gap-[2px] pt-[4px] pr-[2.5px] pl-[5px] pb-[4px]"
+        className="flex flex-col gap-[2px] px-[4px] py-[4px]"
       >
+        {/* Capturas de pantalla — antes incluso que el informe DOC */}
+        {screenshotItems.length > 0 && (
+          <div
+            id="ohif-screenshot-list"
+            className="grid grid-cols-2 gap-[3px]"
+          >
+            {screenshotItems.map(item => {
+              const { displaySetInstanceUID, componentType, numInstances, ...rest } = item;
+              const isActive = activeDisplaySetInstanceUIDs.includes(displaySetInstanceUID);
+              return (
+                <Thumbnail
+                  key={displaySetInstanceUID}
+                  {...rest}
+                  displaySetInstanceUID={displaySetInstanceUID}
+                  numInstances={numInstances || 1}
+                  isActive={isActive}
+                  thumbnailType={componentType}
+                  viewPreset="thumbnails"
+                  onClick={onThumbnailClick.bind(null, displaySetInstanceUID)}
+                  onDoubleClick={onThumbnailDoubleClick.bind(null, displaySetInstanceUID)}
+                  onClickUntrack={onClickUntrack.bind(null, displaySetInstanceUID)}
+                  ThumbnailMenuItems={ThumbnailMenuItems}
+                />
+              );
+            })}
+          </div>
+        )}
+        {/* DOC (Informes médicos) */}
+        {docItems.length > 0 && (
+          <div
+            id="ohif-doc-list"
+            className="flex flex-col gap-[2px]"
+          >
+            {docItems.map(item => {
+              const { displaySetInstanceUID, componentType, numInstances, ...rest } = item;
+              const isActive = activeDisplaySetInstanceUIDs.includes(displaySetInstanceUID);
+              return (
+                <Thumbnail
+                  key={displaySetInstanceUID}
+                  {...rest}
+                  displaySetInstanceUID={displaySetInstanceUID}
+                  numInstances={numInstances || 1}
+                  isActive={isActive}
+                  thumbnailType={componentType}
+                  viewPreset="list"
+                  onClick={onThumbnailClick.bind(null, displaySetInstanceUID)}
+                  onDoubleClick={onThumbnailDoubleClick.bind(null, displaySetInstanceUID)}
+                  onClickUntrack={onClickUntrack.bind(null, displaySetInstanceUID)}
+                  ThumbnailMenuItems={ThumbnailMenuItems}
+                />
+              );
+            })}
+          </div>
+        )}
         {thumbnailItems.length > 0 && (
           <div
             id="ohif-thumbnail-list"
-            className="bg-bkg-low grid grid-cols-1 gap-[4px] w-full px-2"
-            >
+            className="grid grid-cols-2 gap-[3px]"
+          >
             {thumbnailItems.map(item => {
               const { displaySetInstanceUID, componentType, numInstances, ...rest } = item;
-
               const isActive = activeDisplaySetInstanceUIDs.includes(displaySetInstanceUID);
               return (
                 <Thumbnail
@@ -61,8 +133,8 @@ const ThumbnailList = ({
         {/* List Items */}
         {listItems.length > 0 && (
           <div
-            id="ohif-thumbnail-list"
-            className="bg-bkg-low grid grid-cols-[repeat(auto-fit,_minmax(0,275px))] place-items-start gap-[2px]"
+            id="ohif-thumbnail-list-no-image"
+            className="flex flex-col gap-[2px]"
           >
             {listItems.map(item => {
               const { displaySetInstanceUID, componentType, numInstances, ...rest } = item;

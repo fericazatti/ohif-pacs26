@@ -1,8 +1,11 @@
 import classnames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
+import { SlidersHorizontal, ChevronRight } from 'lucide-react';
 import { Icons } from '../Icons';
 import { TooltipTrigger, TooltipContent, Tooltip } from '../Tooltip';
 import { Separator } from '../Separator';
+
+const GREEN = '#1FB250';
 
 /**
  * SidePanel component properties.
@@ -167,12 +170,12 @@ const getToolTipContent = (label: string, disabled: boolean) => {
   );
 };
 
-const createBaseStyle = (expandedWidth: number) => {
+const createBaseStyle = (_expandedWidth: number) => {
   return {
-    maxWidth: `${expandedWidth}px`,
-    width: `${expandedWidth}px`,
-    // To align the top of the side panel with the top of the viewport grid, use position relative and offset the
-    // top by the same top offset as the viewport grid. Also adjust the height so that there is no overflow.
+    // Use 100% width so the SidePanel fills its ResizablePanel container,
+    // which handles pixel/percentage sizing responsively.
+    width: '100%',
+    maxWidth: '100%',
     position: 'relative',
     top: '0.2%',
     height: '99.8%',
@@ -196,6 +199,7 @@ const SidePanel = ({
 }: SidePanelProps) => {
   const [panelOpen, setPanelOpen] = useState(isExpanded);
   const [activeTabIndex, setActiveTabIndex] = useState(activeTabIndexProp ?? 0);
+  const [filterActive, setFilterActive] = useState(false);
 
   const [styleMap, setStyleMap] = useState(
     createStyleMap(
@@ -281,6 +285,28 @@ const SidePanel = ({
 
   const getCloseStateComponent = () => {
     const _childComponents = Array.isArray(tabs) ? tabs : [tabs];
+    const isSingleTab = _childComponents.length <= 1;
+
+    // Para paneles de una sola tab: franja vertical compacta con flechita verde
+    if (isSingleTab) {
+      return (
+        <div
+          onClick={() => updatePanelOpen(!panelOpen)}
+          data-cy={`side-panel-header-${side}`}
+          title="Mostrar panel"
+          className="flex h-full w-full cursor-pointer items-start justify-center bg-[#1E1E1E] pt-2 hover:bg-[#252525]"
+        >
+          <ChevronRight
+            className={classnames(
+              'h-5 w-5 transition-transform',
+              side === 'right' && 'rotate-180'
+            )}
+            style={{ color: GREEN }}
+          />
+        </div>
+      );
+    }
+
     return (
       <>
         <div
@@ -352,7 +378,7 @@ const SidePanel = ({
         data-cy={`side-panel-header-${side}`}
       >
         {React.createElement(Icons[openStateIconName[side]] || Icons.MissingIcon, {
-          className: 'text-primary',
+          style: { color: GREEN },
         })}
       </div>
     );
@@ -428,14 +454,35 @@ const SidePanel = ({
   const getOneTabComponent = () => {
     return (
       <div
-        className={classnames(
-          'text-primary flex grow cursor-pointer select-none justify-center self-center text-[13px]'
-        )}
+        className="relative flex w-full items-center"
         data-cy={`${tabs[0].name}-btn`}
-        onClick={() => updatePanelOpen(!panelOpen)}
       >
+        {/* Left: panel label */}
+        <span
+          className="flex-1 select-none text-left text-sm font-semibold text-white"
+          onClick={() => updatePanelOpen(!panelOpen)}
+        >
+          {tabs[0].label}
+        </span>
+
+        {/* Right: filter icon + gap for collapse icon */}
+        <div className="flex items-center gap-2 pr-[34px]">
+          <SlidersHorizontal
+            className="h-[18px] w-[18px] flex-shrink-0 cursor-pointer"
+            style={{ color: filterActive ? GREEN : '#9A9A9A' }}
+            onClick={e => {
+              e.stopPropagation();
+              const next = !filterActive;
+              setFilterActive(next);
+              window.dispatchEvent(
+                new CustomEvent('ohif:study-browser-filter-toggle', { detail: { active: next } })
+              );
+            }}
+          />
+        </div>
+
+        {/* Absolute right: collapse icon */}
         {getCloseIcon()}
-        <span>{tabs[0].label}</span>
       </div>
     );
   };
@@ -443,7 +490,7 @@ const SidePanel = ({
   const getOpenStateComponent = () => {
     return (
       <>
-        <div className="bg-bkg-med flex h-[40px] flex-shrink-0 select-none rounded-t p-2">
+        <div className="flex h-[40px] flex-shrink-0 select-none items-center rounded-t bg-[#1E1E1E] px-3">
           {tabs.length === 1 ? getOneTabComponent() : getTabGridComponent()}
         </div>
         <Separator
@@ -465,7 +512,7 @@ const SidePanel = ({
           {getOpenStateComponent()}
           {tabs.map((tab, tabIndex) => {
             if (tabIndex === activeTabIndex) {
-              return <tab.content key={tabIndex} />;
+              return <tab.content key={tabIndex} showSettings={filterActive} />;
             }
             return null;
           })}

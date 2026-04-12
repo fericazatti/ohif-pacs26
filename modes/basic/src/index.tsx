@@ -209,20 +209,15 @@ export function onModeExit({ servicesManager }: withAppTypes) {
 }
 
 export const toolbarSections = {
-  [TOOLBAR_SECTIONS.primary]: [
-    'Layout',
-    'MPR',
-    'StackScroll',
-    'WindowLevel',
-    'Zoom',
-    'rotate-right',
-    'Pan',
-    'TrackballRotate',
-    'Capture',
-    'MoreTools',
-    'Crosshairs',
-    'MeasurementTools',
-  ],
+  // Centro del header: solo herramientas de mouse (las que cambian el binding del puntero)
+  [TOOLBAR_SECTIONS.primary]: ['StackScroll', 'WindowLevel', 'Zoom', 'Pan'],
+
+  // Izquierda del header (límite panel/viewport): visualización
+  // (MPR embebe sus propios controles de proyección como popover)
+  [TOOLBAR_SECTIONS.secondary]: ['Layout', 'MPR', 'TrackballRotate', 'Crosshairs'],
+
+  // Derecha del header: capturas, mediciones y overflow
+  primaryRight: ['Capture', 'MeasurementTools', 'MoreTools'],
 
   [TOOLBAR_SECTIONS.viewportActionMenu.topLeft]: ['orientationMenu', 'dataOverlayMenu'],
 
@@ -282,7 +277,7 @@ export const basicLayout = {
   id: ohif.layout,
   props: {
     leftPanels: [ohif.thumbnailList],
-    leftPanelResizable: true,
+    leftPanelResizable: false,
     rightPanels: [cornerstone.segmentation, cornerstone.measurements],
     rightPanelClosed: true,
     rightPanelResizable: true,

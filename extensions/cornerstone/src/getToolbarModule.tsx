@@ -1,17 +1,79 @@
+import React, { useEffect, useState } from 'react';
 import { Enums } from '@cornerstonejs/tools';
+import { useSystem } from '@ohif/core';
 import i18n from '@ohif/i18n';
-import { utils } from '@ohif/ui-next';
+import { utils, Icons } from '@ohif/ui-next';
 import { ViewportDataOverlayMenuWrapper } from './components/ViewportDataOverlaySettingMenu/ViewportDataOverlayMenuWrapper';
 import { ViewportOrientationMenuWrapper } from './components/ViewportOrientationMenu/ViewportOrientationMenuWrapper';
 import { WindowLevelActionMenuWrapper } from './components/WindowLevelActionMenu/WindowLevelActionMenuWrapper';
 import { VOIManualControlMenuWrapper } from './components/VOIManualControlMenu';
 import { ThresholdMenuWrapper } from './components/ThresholdMenu/ThresholdMenuWrapper';
 import { OpacityMenuWrapper } from './components/OpacityMenu/OpacityMenuWrapper';
+import { BlendModeMenuWrapper } from './components/BlendModeMenu/BlendModeMenuWrapper';
+import { MPRProjectionControls } from './components/MPRProjectionControls';
 import ModalityLoadBadge from './components/ModalityLoadBadge/ModalityLoadBadge';
 import NavigationComponent from './components/NavigationComponent/NavigationComponent';
 import TrackingStatus from './components/TrackingStatus/TrackingStatus';
 import ViewportColorbarsContainer from './components/ViewportColorbar';
 import AdvancedRenderingControls from './components/AdvancedRenderingControls';
+
+// Toggle de MPR como botón con ícono. Los controles de proyección
+// (MIP/MinIP/AVG + slab) se renderizan ahora como overlay por viewport
+// dentro de OHIFCornerstoneViewport, así son independientes en cada vista.
+const MPRTextButton = ({ commands, disabled, onInteraction, tooltip }: any) => {
+  const { servicesManager } = useSystem();
+  const { viewportGridService, cornerstoneViewportService } = servicesManager.services;
+  const [isOrtho, setIsOrtho] = useState(false);
+
+  useEffect(() => {
+    let raf = 0;
+    const checkOrtho = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const id = viewportGridService.getActiveViewportId();
+        const vp = id ? cornerstoneViewportService.getCornerstoneViewport(id) : null;
+        setIsOrtho(vp?.type === 'orthographic');
+      });
+    };
+    checkOrtho();
+    const subs = [
+      viewportGridService.subscribe(
+        viewportGridService.EVENTS.ACTIVE_VIEWPORT_ID_CHANGED,
+        checkOrtho
+      ),
+      viewportGridService.subscribe(viewportGridService.EVENTS.VIEWPORTS_READY, checkOrtho),
+      viewportGridService.subscribe(viewportGridService.EVENTS.LAYOUT_CHANGED, checkOrtho),
+      viewportGridService.subscribe(viewportGridService.EVENTS.GRID_STATE_CHANGED, checkOrtho),
+      cornerstoneViewportService.subscribe(
+        cornerstoneViewportService.EVENTS.VIEWPORT_DATA_CHANGED,
+        checkOrtho
+      ),
+    ];
+    return () => {
+      cancelAnimationFrame(raf);
+      subs.forEach(s => s?.unsubscribe?.());
+    };
+  }, [viewportGridService, cornerstoneViewportService]);
+
+  return (
+    <button
+      title={isOrtho ? 'Salir de MPR' : tooltip}
+      disabled={disabled}
+      onClick={() => !disabled && onInteraction?.({ commands })}
+      className={`flex select-none items-center justify-center rounded border outline-none transition-colors duration-150 focus:outline-none disabled:opacity-30 ${
+        isOrtho
+          ? 'border-[#1FB250]/60 bg-[#1F2C24] text-[#1FB250]'
+          : 'border-[#3A3A3A] bg-[#1F1F1F] text-white/75 hover:border-[#1FB250]/60 hover:text-[#1FB250]'
+      }`}
+      style={{ height: 26, width: 28 }}
+    >
+      <Icons.ByName
+        name="layout-advanced-mpr"
+        className="h-[22px] w-[22px]"
+      />
+    </button>
+  );
+};
 
 const getDisabledState = (disabledText?: string) => ({
   disabled: true,
@@ -546,6 +608,58 @@ export default function getToolbarModule({ servicesManager, extensionManager }: 
 
         if (!areReconstructable) {
           return getDisabledState(disabledText);
+        }
+
+        return {
+          disabled: false,
+        };
+      },
+    },
+    {
+      name: 'ohif.mprTextButton',
+      defaultComponent: MPRTextButton,
+    },
+    {
+      name: 'ohif.blendModeMenu',
+      defaultComponent: BlendModeMenuWrapper,
+    },
+    {
+      name: 'ohif.mprProjectionControls',
+      defaultComponent: MPRProjectionControls,
+    },
+    {
+      name: 'evaluate.mprProjectionControls',
+      evaluate: ({ viewportId }) => {
+        const effectiveId = viewportId || viewportGridService.getActiveViewportId();
+        const viewport = cornerstoneViewportService.getCornerstoneViewport(effectiveId);
+        const isOrtho = viewport?.type === 'orthographic';
+        return {
+          disabled: !isOrtho,
+        };
+      },
+    },
+    {
+      name: 'evaluate.blendModeMenu',
+      evaluate: ({ viewportId }) => {
+        const viewport = cornerstoneViewportService.getCornerstoneViewport(viewportId);
+
+        if (!viewport) {
+          return {
+            disabled: true,
+          };
+        }
+
+        if (viewport.type !== 'orthographic') {
+          return {
+            disabled: true,
+          };
+        }
+
+        const displaySetUIDs = viewportGridService.getDisplaySetsUIDsForViewport(viewportId);
+        if (!displaySetUIDs?.length) {
+          return {
+            disabled: true,
+          };
         }
 
         return {

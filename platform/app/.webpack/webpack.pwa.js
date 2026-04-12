@@ -155,7 +155,18 @@ module.exports = (env, argv) => {
       },
       proxy: [
         {
-          '/dicomweb': 'http://localhost:5000',
+          context: ['/dicomweb'],
+          target: 'http://localhost:5000',
+        },
+        // Same-origin proxy for dcm4chee endpoints whose CORS is misconfigured
+        // for cross-origin POST (notably the rejection endpoints used by the
+        // delete-screenshot flow). The reject helper rewrites its URL to a
+        // relative path when running cross-origin, and lands here.
+        {
+          context: ['/dcm4chee-arc'],
+          target: 'https://10.73.173.205:4443',
+          secure: false,
+          changeOrigin: true,
         },
       ],
       static: [

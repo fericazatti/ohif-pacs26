@@ -679,18 +679,36 @@ const toolbarButtons: Button[] = [
   },
   {
     id: 'MPR',
-    uiType: 'ohif.toolButton',
+    uiType: 'ohif.mprTextButton',
     props: {
-      icon: 'LayoutAdvancedMPR', // Usamos un icono de layout genérico
-      label: 'MPR',
       tooltip: 'Multi-Planar Reconstruction',
       commands: {
-        commandName: 'setHangingProtocol',
+        commandName: 'toggleHangingProtocol',
         commandOptions: {
-          protocolId: 'mpr', // Este ID activa la vista MPR estándar
+          protocolId: 'mpr',
         },
       },
       evaluate: 'evaluate.action',
+    },
+  },
+  {
+    id: 'BlendMode',
+    uiType: 'ohif.blendModeMenu',
+    props: {
+      icon: 'GroupLayers',
+      label: 'Projection',
+      tooltip: 'Projection type and slab thickness (MIP / MinIP / Average)',
+      evaluate: {
+        name: 'evaluate.blendModeMenu',
+        hideWhenDisabled: true,
+      },
+    },
+  },
+  {
+    id: 'MPRProjectionControls',
+    uiType: 'ohif.mprProjectionControls',
+    props: {
+      evaluate: 'evaluate.mprProjectionControls',
     },
   },
 ];

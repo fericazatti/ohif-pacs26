@@ -2,7 +2,7 @@
 window.config = {
   // === CAMBIO CRÍTICO 1: Decirle a OHIF que vive en /viewer ===
   routerBasename: '/viewer',
-  
+  siteName: 'Tu Nuevo Título',
   extensions: [],
   modes: [],
   showStudyList: true,
@@ -11,12 +11,25 @@ window.config = {
 
   // --- OPTIMIZACIÓN RENDIMIENTO GLOBAL ---
   useNorm16Texture: true,
-  strictZSpacingForVolumeViewport: true,
-  
+  strictZSpacingForVolumeViewport: false,
+
+  // Cache grande (3GB) para que estudios grandes + previos quepan sin evictions.
+  // Default de cornerstone es 1GB, insuficiente para CT de 1000+ cortes con prior.
+  maxCacheSize: 3221225472, // 3 GB
+
+  // Workers de decodificación DICOM: el bottleneck en intranet es la CPU.
+  // Con 6 workers, el óptimo de `maxNumRequests` es ~2× para que el pool
+  // mantenga los workers alimentados sin saturar memoria.
+  maxNumberOfWebWorkers: 6,
+
+  // IMPORTANTE: valores anteriores (100/75/10) causaban starvation del event loop.
+  // Con 6 workers, más de ~12 requests simultáneas solo se acumulan en la queue
+  // consumiendo memoria y disparando GC pauses que freezean la UI.
   maxNumRequests: {
-    interaction: 100,
-    thumbnail: 75,
+    interaction: 12,
+    thumbnail: 6,
     prefetch: 10,
+    compute: 6,
   },
   
   // --- OPTIMIZACIONES VISUALES Y DE CARGA ---
@@ -40,7 +53,7 @@ window.config = {
           rel: 'noopener noreferrer',
           className: 'header-brand',
           // Al hacer clic en el logo, volvemos a HEROS (la raíz)
-          href: '/', 
+          href: '', 
           style: { 
             display: 'flex', 
             alignItems: 'center',
@@ -79,6 +92,7 @@ oidc: [
         post_logout_redirect_uri: '/viewer/', 
         
         revoke_access_token_on_logout: true,
+        extraQueryParams: { ui_locales: 'es' },
     },
 ],
   investigationalUseDialog: {

@@ -15,12 +15,17 @@ export default {
     const content = function (subProps) {
       const { item: subItem } = subProps;
 
-      // Regular menu item
-      const isDisabled = subItem.selector && !subItem.selector({ servicesManager });
+      // Regular menu item. A `selector` that returns false now HIDES the
+      // item entirely (previously it was rendered disabled). Hiding matches
+      // the menu UX in the rest of OHIF and lets callers use selectors as
+      // visibility guards — e.g. a "Delete" action that only applies to
+      // screenshot displaySets.
+      if (subItem.selector && !subItem.selector({ servicesManager, ...rest })) {
+        return null;
+      }
 
       return (
         <DropdownMenuItem
-          disabled={isDisabled}
           onSelect={() => {
             commandsManager.runAsync(subItem.commands, {
               ...subItem.commandOptions,

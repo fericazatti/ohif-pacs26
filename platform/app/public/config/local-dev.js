@@ -9,7 +9,7 @@ window.config = {
   // Usa texturas WebGL de 16 bits: Mejora calidad y reduce el uso de memoria RAM
   useNorm16Texture: true,
   // Evita interpolaciones costosas en cortes MPR si no son necesarias
-  strictZSpacingForVolumeViewport: true,
+  strictZSpacingForVolumeViewport: false,
   
   // --- ⚡ GESTIÓN DE CONCURRENCIA DE RED ---
   // Controla cuántas peticiones simultáneas hace OHIF. 

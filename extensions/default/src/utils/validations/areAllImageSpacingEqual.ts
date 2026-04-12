@@ -1,11 +1,37 @@
 import {
   _getPerpendicularDistance,
-  _getSpacingIssue,
   reconstructionIssues,
 } from '@ohif/core/src/utils/isDisplaySetReconstructable';
 import { DisplaySetMessage } from '@ohif/core';
 import toNumber from '@ohif/core/src/utils/toNumber';
 import { DisplaySetMessageList } from '@ohif/core';
+
+// Tolerance for spacing variation that triggers a warning to the radiologist.
+// Intentionally TIGHTER than the reconstructable gate (20% in
+// isDisplaySetReconstructable.js) so we can display a warning on volumes that
+// still pass reconstruction but render distorted in MPR coronal/sagittal.
+// 5% catches CTs with mixed-thickness acquisitions without flagging routine
+// helical CTs whose spacing varies by sub-pixel amounts.
+const WARN_SPACING_TOLERANCE = 0.05;
+
+function _getSpacingIssueWarn(spacing: number, averageSpacing: number) {
+  const equalWithinTolerance =
+    Math.abs(spacing - averageSpacing) < averageSpacing * WARN_SPACING_TOLERANCE;
+  if (equalWithinTolerance) {
+    return;
+  }
+  const multipleOfAverageSpacing = spacing / averageSpacing;
+  const numberOfSpacings = Math.round(multipleOfAverageSpacing);
+  const errorForEachSpacing =
+    Math.abs(spacing - numberOfSpacings * averageSpacing) / Math.max(numberOfSpacings, 1);
+  if (errorForEachSpacing < WARN_SPACING_TOLERANCE * averageSpacing) {
+    return {
+      issue: reconstructionIssues.MISSING_FRAMES,
+      missingFrames: numberOfSpacings - 1,
+    };
+  }
+  return { issue: reconstructionIssues.IRREGULAR_SPACING };
+}
 
 /**
  * Checks if series has spacing issues
@@ -40,7 +66,7 @@ export default function areAllImageSpacingEqual(
       previousImagePositionPatient
     );
 
-    const spacingIssue = _getSpacingIssue(spacingBetweenFrames, averageSpacingBetweenFrames);
+    const spacingIssue = _getSpacingIssueWarn(spacingBetweenFrames, averageSpacingBetweenFrames);
 
     if (spacingIssue) {
       const issue = spacingIssue.issue;

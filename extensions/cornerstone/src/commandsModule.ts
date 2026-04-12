@@ -25,7 +25,9 @@ import * as cornerstoneTools from '@cornerstonejs/tools';
 import * as labelmapInterpolation from '@cornerstonejs/labelmap-interpolation';
 import { ONNXSegmentationController } from '@cornerstonejs/ai';
 
-import { Types as OhifTypes, utils } from '@ohif/core';
+import OHIF, { Types as OhifTypes, utils } from '@ohif/core';
+
+const metadataProvider = OHIF.classes.MetadataProvider;
 import {
   callInputDialogAutoComplete,
   createReportAsync,
@@ -45,6 +47,7 @@ import {
 } from './stores';
 import { toolNames } from './initCornerstoneTools';
 import CornerstoneViewportDownloadForm from './utils/CornerstoneViewportDownloadForm';
+import { captureViewportAsSecondaryCapture } from './utils/captureSecondaryCapture';
 import { updateSegmentBidirectionalStats } from './utils/updateSegmentationStats';
 import { generateSegmentationCSVReport } from './utils/generateSegmentationCSVReport';
 import { getUpdatedViewportsForSegmentation } from './utils/hydrationUtils';
@@ -137,6 +140,45 @@ function commandsModule({
 
   function _getActiveViewportEnabledElement() {
     return getActiveViewportEnabledElement(viewportGridService);
+  }
+
+  // Predicate for "is this a screenshot displaySet" — used by the save/delete
+  // flows below. Matches either the deterministic series UID produced by
+  // captureSecondaryCapture.ts (`${studyUID}.9999`) or the SeriesNumber 9999
+  // + Modality OT combination.
+  function _isScreenshotDisplaySet(ds) {
+    if (!ds) {
+      return false;
+    }
+    if (ds.StudyInstanceUID && ds.SeriesInstanceUID === `${ds.StudyInstanceUID}.9999`) {
+      return true;
+    }
+    return Number(ds.SeriesNumber) === 9999 && ds.Modality === 'OT';
+  }
+
+  // Drop any local screenshot displaySets for a study, then re-fetch series
+  // metadata. The metadata store is append-only, so we can't surgically
+  // remove stale instances — the only way to get an accurate view after a
+  // reject or a new STOW is to wipe the local displaySet(s) and let
+  // makeDisplaySets rebuild them from the fresh server state.
+  async function _refreshScreenshotDisplaySets(StudyInstanceUID: string) {
+    if (!StudyInstanceUID) {
+      return;
+    }
+    const stale = displaySetService.activeDisplaySets.filter(
+      ds => ds.StudyInstanceUID === StudyInstanceUID && _isScreenshotDisplaySet(ds)
+    );
+    stale.forEach(ds => displaySetService.deleteDisplaySet(ds.displaySetInstanceUID));
+
+    const dataSource = extensionManager.getActiveDataSource()?.[0];
+    if (!dataSource?.retrieve?.series?.metadata) {
+      return;
+    }
+    try {
+      await dataSource.retrieve.series.metadata({ StudyInstanceUID });
+    } catch (error) {
+      console.error('[refreshScreenshotDisplaySets]', error);
+    }
   }
 
   function _getViewportEnabledElement(viewportId: string) {
@@ -1092,6 +1134,246 @@ function commandsModule({
             cornerstoneViewportService,
           },
           containerClassName: 'max-w-4xl p-4',
+        });
+      }
+    },
+    // Save the current viewport as a DICOM Secondary Capture stored back to the PACS.
+    // The capture includes annotations/overlays (burned in) and accumulates in a
+    // "Capturas de pantalla" series per study.
+    //
+    // When invoked from the Capture modal, the caller passes `viewportElement`
+    // pointing at the preview div — so the radiologist sees exactly what will be
+    // stored. Without an override, we capture the active viewport directly.
+    saveViewportAsSecondaryCapture: async ({
+      viewportElement: viewportElementOverride,
+    }: { viewportElement?: HTMLElement } = {}) => {
+      const { activeViewportId } = viewportGridService.getState();
+      const enabledElement = _getActiveViewportEnabledElement();
+
+      if (!enabledElement || !cornerstoneViewportService.getCornerstoneViewport(activeViewportId)) {
+        uiNotificationService.show({
+          title: 'Guardar en PACS',
+          message: 'Seleccioná un viewport de imagen para capturar.',
+          type: 'error',
+        });
+        return;
+      }
+
+      const viewportElement =
+        viewportElementOverride || (enabledElement.viewport?.element as HTMLElement | undefined);
+      if (!viewportElement) {
+        uiNotificationService.show({
+          title: 'Guardar en PACS',
+          message: 'No se pudo obtener el elemento del viewport activo.',
+          type: 'error',
+        });
+        return;
+      }
+      const displaySetUIDs =
+        viewportGridService.getState().viewports.get(activeViewportId)?.displaySetInstanceUIDs ||
+        [];
+      const displaySet = displaySetUIDs
+        .map(uid => displaySetService.getDisplaySetByUID(uid))
+        .find(Boolean);
+
+      if (!displaySet) {
+        uiNotificationService.show({
+          title: 'Guardar en PACS',
+          message: 'No se encontró el displaySet del viewport activo.',
+          type: 'error',
+        });
+        return;
+      }
+
+      const firstInstance = displaySet.instances?.[0] || {};
+      const study = {
+        StudyInstanceUID: displaySet.StudyInstanceUID || firstInstance.StudyInstanceUID,
+        PatientName: firstInstance.PatientName,
+        PatientID: firstInstance.PatientID,
+        PatientBirthDate: firstInstance.PatientBirthDate,
+        PatientSex: firstInstance.PatientSex,
+        StudyDate: firstInstance.StudyDate,
+        StudyTime: firstInstance.StudyTime,
+        StudyID: firstInstance.StudyID,
+        AccessionNumber: firstInstance.AccessionNumber,
+        ReferringPhysicianName: firstInstance.ReferringPhysicianName,
+      };
+
+      if (!study.StudyInstanceUID) {
+        uiNotificationService.show({
+          title: 'Guardar en PACS',
+          message: 'El estudio activo no expone StudyInstanceUID.',
+          type: 'error',
+        });
+        return;
+      }
+
+      const dataSource = extensionManager.getActiveDataSource()?.[0];
+      if (!dataSource?.store?.dicom) {
+        uiNotificationService.show({
+          title: 'Guardar en PACS',
+          message: 'La fuente de datos activa no soporta STOW-RS.',
+          type: 'error',
+        });
+        return;
+      }
+
+      const captureTask = captureViewportAsSecondaryCapture({
+        viewportElement,
+        study,
+        instanceNumber: Math.floor(Date.now() / 1000),
+        dataSource,
+      });
+
+      uiNotificationService.show({
+        title: 'Guardar en PACS',
+        message: 'Subiendo captura al PACS…',
+        type: 'loading',
+        promise: captureTask,
+        promiseMessages: {
+          loading: 'Subiendo captura al PACS…',
+          success: 'Captura guardada en la serie "Capturas de pantalla".',
+          error: err => `Error al guardar la captura: ${err?.message || err}`,
+        },
+      });
+
+      try {
+        await captureTask;
+        // Refresh the local screenshot series so the new capture appears in
+        // the sidepanel without a page reload.
+        await _refreshScreenshotDisplaySets(study.StudyInstanceUID);
+      } catch (error) {
+        console.error('[saveViewportAsSecondaryCapture]', error);
+      }
+    },
+    // Permanent-ish deletion of an entire screenshot series. Reject at
+    // dcm4chee (113001^DCM "Rejected for Quality Reasons" makes it disappear
+    // from future queries) and drop the local displaySet so the thumbnail is
+    // gone immediately.
+    deleteScreenshotSeries: async ({ displaySetInstanceUID }: { displaySetInstanceUID: string }) => {
+      const ds = displaySetService.getDisplaySetByUID(displaySetInstanceUID);
+      if (!ds || !_isScreenshotDisplaySet(ds)) {
+        uiNotificationService.show({
+          title: 'Eliminar capturas',
+          message: 'Esta serie no es una serie de capturas de pantalla.',
+          type: 'error',
+        });
+        return;
+      }
+
+      // eslint-disable-next-line no-alert
+      const confirmed = window.confirm(
+        '¿Eliminar toda la serie de capturas de pantalla? Esta acción no se puede deshacer.'
+      );
+      if (!confirmed) {
+        return;
+      }
+
+      const dataSource = extensionManager.getActiveDataSource()?.[0];
+      if (!dataSource?.reject?.series) {
+        uiNotificationService.show({
+          title: 'Eliminar capturas',
+          message: 'La fuente de datos activa no soporta eliminación.',
+          type: 'error',
+        });
+        return;
+      }
+
+      try {
+        await dataSource.reject.series(ds.StudyInstanceUID, ds.SeriesInstanceUID);
+        displaySetService.deleteDisplaySet(displaySetInstanceUID);
+        uiNotificationService.show({
+          title: 'Eliminar capturas',
+          message: 'Serie de capturas eliminada del PACS.',
+          type: 'success',
+        });
+      } catch (error) {
+        console.error('[deleteScreenshotSeries]', error);
+        uiNotificationService.show({
+          title: 'Eliminar capturas',
+          message: `No se pudo eliminar la serie: ${error?.message || error}`,
+          type: 'error',
+        });
+      }
+    },
+    // Delete the instance currently displayed in the active viewport. Only
+    // makes sense when the active viewport is showing a screenshot series.
+    // The overlay button in OHIFCornerstoneViewport is the intended entry
+    // point — it's only rendered for screenshot displaySets.
+    deleteScreenshotInstance: async () => {
+      const activeViewportId = viewportGridService.getActiveViewportId();
+      const enabledElement = _getActiveViewportEnabledElement();
+      const viewport = enabledElement?.viewport as any;
+      if (!viewport?.getCurrentImageId) {
+        uiNotificationService.show({
+          title: 'Eliminar captura',
+          message: 'El viewport activo no soporta eliminación por instancia.',
+          type: 'error',
+        });
+        return;
+      }
+
+      const imageId = viewport.getCurrentImageId();
+      if (!imageId) {
+        return;
+      }
+      const uids = metadataProvider.getUIDsFromImageID(imageId) || {};
+      const { StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID } = uids;
+      if (!StudyInstanceUID || !SeriesInstanceUID || !SOPInstanceUID) {
+        return;
+      }
+
+      const displaySetUIDs =
+        viewportGridService.getState().viewports.get(activeViewportId)?.displaySetInstanceUIDs ||
+        [];
+      const ds = displaySetUIDs
+        .map(uid => displaySetService.getDisplaySetByUID(uid))
+        .find(d => d && _isScreenshotDisplaySet(d));
+
+      if (!ds) {
+        uiNotificationService.show({
+          title: 'Eliminar captura',
+          message: 'La serie activa no es una serie de capturas.',
+          type: 'error',
+        });
+        return;
+      }
+
+      // eslint-disable-next-line no-alert
+      const confirmed = window.confirm(
+        '¿Eliminar esta captura del PACS? Esta acción no se puede deshacer.'
+      );
+      if (!confirmed) {
+        return;
+      }
+
+      const dataSource = extensionManager.getActiveDataSource()?.[0];
+      if (!dataSource?.reject?.instance) {
+        uiNotificationService.show({
+          title: 'Eliminar captura',
+          message: 'La fuente de datos activa no soporta eliminación por instancia.',
+          type: 'error',
+        });
+        return;
+      }
+
+      try {
+        await dataSource.reject.instance(StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID);
+        // Nuclear refresh: wipe the local screenshot displaySet(s) and
+        // re-fetch. The metadata store is append-only so in-place surgery
+        // would leave stale instances behind.
+        await _refreshScreenshotDisplaySets(StudyInstanceUID);
+        uiNotificationService.show({
+          title: 'Eliminar captura',
+          message: 'Captura eliminada del PACS.',
+          type: 'success',
+        });
+      } catch (error) {
+        console.error('[deleteScreenshotInstance]', error);
+        uiNotificationService.show({
+          title: 'Eliminar captura',
+          message: `No se pudo eliminar la captura: ${error?.message || error}`,
+          type: 'error',
         });
       }
     },
@@ -2429,6 +2711,61 @@ function commandsModule({
       const renderingEngine = cornerstoneViewportService.getRenderingEngine();
       renderingEngine.render();
     },
+
+    setViewportBlendMode: ({ blendMode }: { blendMode: string }) => {
+      const BLEND_MODE_MAP = {
+        MIP: CoreEnums.BlendModes.MAXIMUM_INTENSITY_BLEND,
+        MinIP: CoreEnums.BlendModes.MINIMUM_INTENSITY_BLEND,
+        Average: CoreEnums.BlendModes.AVERAGE_INTENSITY_BLEND,
+      };
+
+      const blendModeEnum = BLEND_MODE_MAP[blendMode];
+      if (blendModeEnum === undefined) {
+        console.warn(`Unknown blend mode: ${blendMode}`);
+        return;
+      }
+
+      const viewportId = viewportGridService.getActiveViewportId();
+      const viewport = cornerstoneViewportService.getCornerstoneViewport(viewportId);
+
+      if (!viewport || !(viewport instanceof BaseVolumeViewport)) {
+        console.warn('Active viewport does not support setBlendMode');
+        return;
+      }
+
+      // Update CrosshairsTool config so future slab-drag interactions use
+      // the selected blend mode instead of always defaulting to MIP.
+      const toolGroup = toolGroupService.getToolGroupForViewport(viewportId);
+      if (toolGroup?.id) {
+        const currentConfig = toolGroupService.getToolConfiguration(toolGroup.id, 'Crosshairs') ?? {};
+        toolGroupService.setToolConfiguration(toolGroup.id, 'Crosshairs', {
+          ...currentConfig,
+          slabThicknessBlendMode: blendModeEnum,
+        });
+      }
+
+      viewport.setBlendMode(blendModeEnum);
+
+      const currentSlab = viewport.getSlabThickness();
+      if (!currentSlab || currentSlab < 0.5) {
+        viewport.setSlabThickness(10);
+      }
+
+      viewport.render();
+    },
+
+    setViewportSlabThickness: ({ slabThickness }: { slabThickness: number }) => {
+      const viewportId = viewportGridService.getActiveViewportId();
+      const viewport = cornerstoneViewportService.getCornerstoneViewport(viewportId);
+
+      if (!viewport || !(viewport instanceof BaseVolumeViewport)) {
+        console.warn('Active viewport does not support setSlabThickness');
+        return;
+      }
+
+      viewport.setSlabThickness(slabThickness);
+      viewport.render();
+    },
   };
 
   const definitions = {
@@ -2569,6 +2906,15 @@ function commandsModule({
     },
     showDownloadViewportModal: {
       commandFn: actions.showDownloadViewportModal,
+    },
+    saveViewportAsSecondaryCapture: {
+      commandFn: actions.saveViewportAsSecondaryCapture,
+    },
+    deleteScreenshotSeries: {
+      commandFn: actions.deleteScreenshotSeries,
+    },
+    deleteScreenshotInstance: {
+      commandFn: actions.deleteScreenshotInstance,
     },
     toggleCine: {
       commandFn: actions.toggleCine,
@@ -2749,6 +3095,12 @@ function commandsModule({
     decimateContours: actions.decimateContours,
     convertContourHoles: actions.convertContourHoles,
     setInterpolationToolConfiguration: actions.setInterpolationToolConfiguration,
+    setViewportBlendMode: {
+      commandFn: actions.setViewportBlendMode,
+    },
+    setViewportSlabThickness: {
+      commandFn: actions.setViewportSlabThickness,
+    },
   };
 
   return {

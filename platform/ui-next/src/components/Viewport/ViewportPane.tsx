@@ -35,7 +35,10 @@ function ViewportPane({
 
   const focus = () => {
     if (dropElement) {
-      dropElement.focus();
+      // preventScroll:true avoids the browser scrolling the document to bring
+      // this element into view when it receives focus (the viewer is a fixed
+      // full-screen app and any document scroll breaks the layout).
+      dropElement.focus({ preventScroll: true });
     }
   };
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classnames from 'classnames';
+
 import { ThumbnailList } from '../ThumbnailList';
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../Accordion';
@@ -35,42 +36,29 @@ const StudyItem = ({
       defaultValue={isActive ? 'study-item' : undefined}
     >
       <AccordionItem value="study-item">
-        <AccordionTrigger className={classnames('hover:bg-accent bg-popover group w-full rounded')}>
-          <div className="flex h-[40px] w-full flex-row overflow-hidden">
-            <div className="flex w-full flex-row items-center justify-between">
-              <div className="flex min-w-0 flex-col items-start text-[13px]">
-                <Tooltip>
-                  <TooltipContent>{date}</TooltipContent>
-                  <TooltipTrigger
-                    className="w-full"
-                    asChild
-                  >
-                    <div className="h-[18px] w-full max-w-[160px] overflow-hidden truncate whitespace-nowrap text-left text-white">
-                      {date}
-                    </div>
-                  </TooltipTrigger>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipContent>{description}</TooltipContent>
-                  <TooltipTrigger
-                    className="w-full"
-                    asChild
-                  >
-                    <div className="text-muted-foreground h-[18px] w-full overflow-hidden truncate whitespace-nowrap text-left">
-                      {description}
-                    </div>
-                  </TooltipTrigger>
-                </Tooltip>
-              </div>
-              <div className="text-muted-foreground flex flex-col items-end pl-[10px] text-[12px]">
-                <div className="max-w-[150px] overflow-hidden text-ellipsis">{modalities}</div>
-                <div>{numInstances}</div>
+        <AccordionTrigger
+          className={classnames(
+            'group w-full !p-0 transition-colors duration-150',
+            'bg-[#202020] hover:bg-[#282828]',
+            '[&>svg]:mr-2 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-[#505050]'
+          )}
+        >
+          <div className="flex min-w-0 flex-1 flex-col items-start gap-1 px-2.5 py-2">
+            {/* Fila superior: descripción + menú */}
+            <div className="flex w-full items-start gap-1">
+              <div className="min-w-0 flex-1 break-words text-[11px] font-normal leading-tight text-[#D0D0D8]">
+                {description || 'Sin descripción'}
               </div>
               {StudyMenuItems && (
-                <div className="ml-2 flex items-center">
-                  <StudyMenuItems StudyInstanceUID={StudyInstanceUID} />
-                </div>
+                <StudyMenuItems StudyInstanceUID={StudyInstanceUID} />
               )}
+            </div>
+            {/* Fila inferior: fecha | modalidad */}
+            <div className="flex w-full items-center gap-2">
+              <span className="text-[9px] text-[#606068]">{date}</span>
+              <span className="text-[9px] font-medium text-[#505058]">
+                {modalities}
+              </span>
             </div>
           </div>
         </AccordionTrigger>

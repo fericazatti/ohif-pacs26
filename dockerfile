@@ -21,7 +21,7 @@ RUN yarn config set network-timeout 300000
 ENV NODE_OPTIONS="--max-old-space-size=8192"
 
 # Instalar paquetes
-RUN yarn install --frozen-lockfile
+RUN yarn install
 
 # Copiar todo el código fuente
 COPY . .
