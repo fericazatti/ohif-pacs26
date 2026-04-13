@@ -124,6 +124,52 @@ showPatientInfo: 'visibleReadOnly'
 
 ---
 
+## Deletion / DICOM Rejection — DISABLED por seguridad (2026-04-13)
+
+**Política institucional:** ningún flujo del viewer puede borrar/rechazar instancias o series del PACS. La eliminación de estudios DICOM solo se hace desde herramientas administrativas (dcm4chee web UI o dcm4che CLI), nunca desde el viewer del médico.
+
+**Lo que está apagado:**
+- `dicomweb-server.js`: `supportsReject: false` (antes `true`). Esto evita que `DicomWebDataSource.index.ts` adjunte el método `implementation.reject` al data source.
+- Removidos del `commandsModule.ts` (extensions/cornerstone): las acciones `deleteScreenshotSeries` y `deleteScreenshotInstance`, y sus registros en el `definitions` block.
+- Removido el menu item `deleteScreenshotSeries` del `studyBrowserCustomization.ts` (extensions/default) — ya no aparece "Eliminar serie de capturas" en el menú contextual del thumbnail.
+- Removido el componente `ScreenshotDeleteOverlay` (`extensions/cornerstone/src/components/ScreenshotDeleteOverlay/` — directorio borrado completo) y su uso en `OHIFCornerstoneViewport.tsx` — ya no hay botón flotante "Eliminar captura" sobre las viewports de capturas.
+- **No tocado**: `extensions/default/src/DicomWebDataSource/dcm4cheeReject.js` queda como código vendor original sin uso. No borrar — es upstream OHIF.
+- **No tocado**: helpers `_isScreenshotDisplaySet` y `_refreshScreenshotDisplaySets` en `commandsModule.ts` siguen, los usa el flujo de **guardar** captura (`saveViewportAsSecondaryCapture`).
+
+**Lo que sigue funcionando:**
+- Capturar pantalla y guardarla como Secondary Capture en el PACS (`saveViewportAsSecondaryCapture`).
+- Todo lo demás de read-only (visualizar, MPR, mediciones temporales que no se persisten en el PACS, etc).
+
+### Por qué se desactivó (incidente 2026-04-12 → 2026-04-13)
+
+El borrado nunca llegó a funcionar en producción. El flujo intentaba:
+1. Browser POST → `/dcm4chee-arc/aets/DCM4CHEE/rs/studies/{s}/series/{s}/reject/113001%5EDCM`
+2. Gateway institucional (10.73.161.165, fuera de nuestro control) **decodifica `%5E` → `^` literal** en el path antes de reenviar al OHIF nginx.
+3. OHIF nginx hace proxy a dcm4chee con el `^` literal.
+4. Wildfly/Undertow rechaza con **400 body vacío** porque `^` no es char válido en path RFC 3986 (no está en unreserved/sub-delims).
+
+**Verificación de la causa raíz:**
+```bash
+# Curl directo a OHIF nginx (bypass gateway institucional) — funciona, llega 401 (sin auth)
+curl -sk -X POST "https://10.73.173.205:4443/dcm4chee-arc/.../reject/113001%5EDCM"
+# → 401 (URL bien parseada)
+
+# Mismo POST desde browser pasando por gateway institucional
+# → access log de OHIF nginx muestra "/reject/113001^DCM" (literal, sin %5E)
+# → dcm4chee/Undertow → 400 body vacío
+```
+
+**Workaround posible si en el futuro se quiere reactivar borrado:** Agregar un `location` regex en `nginx.conf` (container `ohif-prod-new`) que intercepte URLs terminadas en `/reject-quality` y reescriba a `/reject/113001%5EDCM` antes del `proxy_pass`. Como la reescritura ocurre **después** del gateway institucional (ya dentro del container OHIF), el `%5E` nunca es decodificado por el gateway. Plus: agregar método `instance` a `dcm4cheeReject.js` (originalmente solo tenía `series`). Plus: revertir todos los cambios listados arriba. **No hacer sin antes hablar con el equipo de seguridad institucional** — el motivo de quitar la feature fue justamente para evitar que cualquier médico borre estudios desde el viewer.
+
+### Cosas que **no** son la causa (descartadas durante el debug)
+
+- ❌ El gateway institucional no bloquea `%5E` — lo decodifica.
+- ❌ No es problema de auth — series llegaba a dcm4chee con 400 (no 401).
+- ❌ No es problema de Web Origins de Keycloak — eso causaba `Failed to fetch` en el OIDC callback, otro bug distinto resuelto el 2026-04-12 (ver memoria `keycloak_web_origins.md`).
+- ❌ No es problema del routerBasename `/viewer/viewer/callback` — el callback OIDC funciona así por diseño (OHIF prepende basename + redirect_uri en `OpenIdConnectRoutes.tsx:35`).
+
+---
+
 ## Custom Modifications in This Fork
 
 All changes are on `dev` branch. **Before touching any file, check if it's in this list.**
@@ -189,12 +235,12 @@ Helper: `pickMprSubset(instances)` — groups by `(thickness, IOP)`, picks the l
 
 **Why thumbnails uniquely identifiable:** `ImageSet` constructor in `platform/core/src/classes/ImageSet.ts` calls `guid()` for each new instance, so the two displaySets get distinct `displaySetInstanceUID` values automatically — no manual UID handling needed.
 
-### Modified Files (uncommitted as of 2026-04-10, updated 2026-04-12)
+### Modified Files (uncommitted as of 2026-04-10, updated 2026-04-13)
 
 **Extensions:**
 - `extensions/cornerstone/src/Viewport/Overlays/ViewportImageSliceLoadingIndicator.tsx`
-- `extensions/cornerstone/src/Viewport/OHIFCornerstoneViewport.tsx` — mounts the per-viewport MPR overlay
-- `extensions/cornerstone/src/commandsModule.ts`
+- `extensions/cornerstone/src/Viewport/OHIFCornerstoneViewport.tsx` — mounts the per-viewport MPR overlay (2026-04-13: ScreenshotDeleteOverlay removido)
+- `extensions/cornerstone/src/commandsModule.ts` — (2026-04-13: removidas acciones `deleteScreenshotSeries` / `deleteScreenshotInstance` y sus registros)
 - `extensions/cornerstone/src/getToolbarModule.tsx` — `MPRTextButton` reduced to icon-only, popover removed
 - `extensions/cornerstone/src/hps/mpr.ts` — MPR hanging protocol
 - `extensions/cornerstone/src/index.tsx`

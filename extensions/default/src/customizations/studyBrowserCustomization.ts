@@ -17,33 +17,6 @@ export default {
       iconName: 'ViewportViews',
       commands: 'addDisplaySetAsLayer',
     },
-    {
-      id: 'deleteScreenshotSeries',
-      label: 'Eliminar serie de capturas',
-      iconName: 'Delete',
-      // Only appears on the "Capturas de pantalla" series. Matches the
-      // same predicate used in PanelStudyBrowser / ThumbnailList: either
-      // the deterministic series UID (`${studyUID}.9999`) or the
-      // SeriesNumber 9999 + Modality OT combination.
-      selector: ({ servicesManager, displaySetInstanceUID }) => {
-        if (!displaySetInstanceUID) {
-          return false;
-        }
-        const { displaySetService } = servicesManager.services;
-        const ds = displaySetService.getDisplaySetByUID(displaySetInstanceUID);
-        if (!ds) {
-          return false;
-        }
-        if (
-          ds.StudyInstanceUID &&
-          ds.SeriesInstanceUID === `${ds.StudyInstanceUID}.9999`
-        ) {
-          return true;
-        }
-        return Number(ds.SeriesNumber) === 9999 && ds.Modality === 'OT';
-      },
-      commands: 'deleteScreenshotSeries',
-    },
   ],
   'studyBrowser.sortFunctions': [
     {

@@ -114,7 +114,9 @@ oidc: [
         wadoRoot: '/dcm4chee-arc/aets/DCM4CHEE/rs',
         
         qidoSupportsIncludeField: true,
-        supportsReject: true,
+        // Eliminación deshabilitada por seguridad: ningún flujo del viewer
+        // debe poder rechazar/borrar instancias o series del PACS.
+        supportsReject: false,
         imageRendering: 'wadors',
         thumbnailRendering: 'wadors',
         enableStudyLazyLoad: true,
